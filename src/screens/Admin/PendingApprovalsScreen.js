@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
-import api from '../../services/api';
+import api, { reportError } from '../../services/api';
 
 export default function PendingApprovalsScreen() {
   const c = useTheme();
@@ -14,7 +14,7 @@ export default function PendingApprovalsScreen() {
     try {
       const r = await api.get('/admin/pending');
       setUsers(r.data);
-    } catch (e) { console.error(e); }
+    } catch (e) { reportError(e); }
     finally { setLoading(false); }
   };
 

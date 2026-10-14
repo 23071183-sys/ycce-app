@@ -36,7 +36,7 @@ export default function SubjectDetailScreen({ route }) {
         if (user?.role === 'student') { const r = await api.get(`/attendance/subject/${subject.id}`); setAttendance(r.data); }
         else { const r = await api.get(`/users/students/year/${subject.year}`); setStudents(r.data.map(s => ({ ...s, status: 'present' }))); }
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { reportError(e); }
     finally { setLoading(false); }
   };
 
@@ -374,18 +374,59 @@ function AssignmentCard({ assignment, user, color, onSubmit, c }) {
       {assignment.description ? <Text style={{ fontSize: 13, color: c.textMuted, lineHeight: 19, marginBottom: 8, fontWeight: '300' }}>{assignment.description}</Text> : null}
       <Text style={{ fontSize: 12, color: overdue ? c.danger : c.textMuted }}>Due: {fmt(assignment.due_date)} {overdue ? '(Overdue)' : ''}</Text>
       {assignment.file_url ? (
-        <TouchableOpacity onPress={() => Linking.openURL(assignment.file_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, backgroundColor: c.cardAlt, borderRadius: 8, padding: 10, borderWidth: 0.5, borderColor: c.border }}>
-          <Ionicons name="document-attach-outline" size={15} color={color} />
-          <Text style={{ fontSize: 13, color, fontWeight: '500', flex: 1 }} numberOfLines={1}>{assignment.file_name || 'View Attachment'}</Text>
-          <Ionicons name="download-outline" size={15} color={color} />
-        </TouchableOpacity>
-      ) : null}
-      {user?.role === 'student' && !overdue && (
-        <>
-          <TouchableOpacity style={{ backgroundColor: color, borderRadius: 8, padding: 10, alignItems: 'center', marginTop: 10 }} onPress={() => setShowForm(!showForm)}>
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>{showForm ? 'Cancel' : 'Submit'}</Text>
+        <View style={{ marginTop: 10 }}>
+          <Text style={{ fontSize: 10, fontWeight: '600', color: c.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+            Given by {assignment.posted_by_name || 'instructor'}
+          </Text>
+          <TouchableOpacity onPress={() => Linking.openURL(assignment.file_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.cardAlt, borderRadius: 8, padding: 10, borderWidth: 0.5, borderColor: c.border }}>
+            <Ionicons name="document-text-outline" size={15} color={c.textMuted} />
+            <Text style={{ fontSize: 13, color: c.text, fontWeight: '500', flex: 1 }} numberOfLines={1}>{assignment.file_name || 'View Attachment'}</Text>
+            <Ionicons name="download-outline" size={15} color={c.textMuted} />
           </TouchableOpacity>
-          {showForm && (
+        </View>
+      ) : null}
+      {user?.role === 'student' && (
+        <View style={{ marginTop: 14, borderTopWidth: 0.5, borderTopColor: c.border, paddingTop: 12 }}>
+          <Text style={{ fontSize: 10, fontWeight: '600', color: c.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+            Your submission
+          </Text>
+
+          {assignment.submission_id ? (
+            <View style={{ backgroundColor: c.cardAlt, borderRadius: 8, padding: 10, borderWidth: 0.5, borderColor: c.success, marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="checkmark-circle" size={16} color={c.success} />
+                <Text style={{ fontSize: 12, color: c.success, fontWeight: '700', letterSpacing: 1 }}>SUBMITTED</Text>
+                <Text style={{ fontSize: 11, color: c.textMuted, flex: 1 }}>
+                  {assignment.submitted_at ? fmt(assignment.submitted_at) : ''}
+                </Text>
+                {assignment.grade ? (
+                  <Text style={{ fontSize: 12, color: c.text, fontWeight: '700' }}>{assignment.grade}</Text>
+                ) : null}
+              </View>
+              {assignment.submission_file_url ? (
+                <TouchableOpacity onPress={() => Linking.openURL(assignment.submission_file_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                  <Ionicons name="document-attach-outline" size={14} color={color} />
+                  <Text style={{ fontSize: 12, color, flex: 1 }} numberOfLines={1}>{assignment.submission_file_name || 'View file'}</Text>
+                </TouchableOpacity>
+              ) : null}
+              {assignment.feedback ? (
+                <Text style={{ fontSize: 12, color: c.textMuted, marginTop: 8, fontStyle: 'italic' }}>{assignment.feedback}</Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={{ fontSize: 12, color: overdue ? c.danger : c.textMuted, marginBottom: 8 }}>
+              {overdue ? 'Not submitted — the due date has passed.' : 'Nothing submitted yet.'}
+            </Text>
+          )}
+
+          {!overdue && (
+          <TouchableOpacity style={{ backgroundColor: color, borderRadius: 8, padding: 10, alignItems: 'center' }} onPress={() => setShowForm(!showForm)}>
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+              {showForm ? 'Cancel' : assignment.submission_id ? 'Replace submission' : 'Attach & submit'}
+            </Text>
+          </TouchableOpacity>
+          )}
+          {showForm && !overdue && (
             <View style={{ marginTop: 10 }}>
               <TextInput
                 style={{ backgroundColor: c.cardAlt, borderRadius: 8, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: 'top', color: c.text, marginBottom: 8, borderWidth: 0.5, borderColor: c.border }}
@@ -402,7 +443,7 @@ function AssignmentCard({ assignment, user, color, onSubmit, c }) {
               </TouchableOpacity>
             </View>
           )}
-        </>
+        </View>
       )}
     </View>
   );

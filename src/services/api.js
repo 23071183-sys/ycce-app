@@ -25,10 +25,20 @@ const deriveApiUrlFromMetro = () => {
 export const resolveBaseUrl = () =>
   process.env.EXPO_PUBLIC_API_URL || deriveApiUrlFromMetro() || `http://localhost:${API_PORT}/api`;
 
+// The host sleeps when idle and takes ~25s to answer the request that wakes it,
+// so a 15s ceiling aborted calls that would have succeeded.
 const api = axios.create({
   baseURL: resolveBaseUrl(),
-  timeout: 15000,
+  timeout: 40000,
 });
+
+// While the host is still starting it answers 503 rather than queueing, so the
+// first request after an idle period fails even though nothing is wrong. Retry
+// those a few times before surfacing anything to the user.
+const WAKE_RETRY_STATUSES = [502, 503, 504];
+const WAKE_RETRY_DELAYS_MS = [2000, 5000, 10000];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let _logoutCallback = null;
 export const setLogoutCallback = (fn) => { _logoutCallback = fn; };
@@ -47,7 +57,19 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       await AsyncStorage.multiRemove(['token', 'user']);
       if (_logoutCallback) _logoutCallback();
+      return Promise.reject(error);
     }
+
+    const config = error.config;
+    if (config && WAKE_RETRY_STATUSES.includes(error.response?.status)) {
+      const attempt = config._wakeRetry ?? 0;
+      if (attempt < WAKE_RETRY_DELAYS_MS.length) {
+        config._wakeRetry = attempt + 1;
+        await sleep(WAKE_RETRY_DELAYS_MS[attempt]);
+        return api(config);
+      }
+    }
+
     return Promise.reject(error);
   }
 );
