@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import api, { reportError } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -37,7 +37,7 @@ export default function ResultsScreen() {
       ]);
       setResults(r.data);
       setCgpaData(cg.data);
-    } catch (e) { console.error(e); }
+    } catch (e) { reportError(e); }
     finally { setLoading(false); }
   };
 

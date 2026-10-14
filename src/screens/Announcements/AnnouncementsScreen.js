@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import api from '../../services/api';
+import api, { reportError } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,7 +20,7 @@ export default function AnnouncementsScreen() {
         const unique = Array.from(new Map(all.map(a => [a.id, a])).values())
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setAnnouncements(unique);
-      } catch (e) { console.error(e); }
+      } catch (e) { reportError(e); }
       finally { setLoading(false); }
     };
     fetch();
