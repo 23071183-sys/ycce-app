@@ -21,6 +21,7 @@
       }
     },
     "android": {
+      "package": "com.ctpresident.yccectapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -44,6 +45,18 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "adde3366-57fb-48ab-9c62-b6011e8f7836"
+      }
+    },
+    "owner": "ctpresident",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/adde3366-57fb-48ab-9c62-b6011e8f7836"
     }
   }
 }

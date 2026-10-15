@@ -21,9 +21,18 @@ const deriveApiUrlFromMetro = () => {
   return `http://${host}:${API_PORT}/api`;
 };
 
-// Priority: explicit tunnel URL > derived LAN address > localhost (simulator).
+const PRODUCTION_API = 'https://ycce-app-backend.onrender.com/api';
+
+// Priority: explicit URL > derived LAN address > a last resort that depends on
+// how the app is running. In development that is localhost (a simulator on
+// this machine). A published update or installed build has no Metro host to
+// derive from, and localhost there is the phone itself, so it must fall back
+// to the hosted API instead — otherwise a build made without the env var opens
+// to empty screens with nothing reporting why.
 export const resolveBaseUrl = () =>
-  process.env.EXPO_PUBLIC_API_URL || deriveApiUrlFromMetro() || `http://localhost:${API_PORT}/api`;
+  process.env.EXPO_PUBLIC_API_URL ||
+  deriveApiUrlFromMetro() ||
+  (__DEV__ ? `http://localhost:${API_PORT}/api` : PRODUCTION_API);
 
 // The host sleeps when idle and takes ~25s to answer the request that wakes it,
 // so a 15s ceiling aborted calls that would have succeeded.
