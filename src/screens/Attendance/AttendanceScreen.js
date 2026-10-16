@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import useApi from '../../hooks/useApi';
 import { attendanceTone, space } from '../../theme';
 import {
-  Badge, Card, EmptyState, ErrorState, ListItem, ProgressRing, Screen, SectionLabel, Skeleton, Text,
+  Badge, Button, Card, EmptyState, ErrorState, ListItem, ProgressRing, Screen, SectionLabel, Skeleton, Text,
 } from '../../components/ui';
 
 function LoadingSkeleton() {
@@ -78,6 +78,13 @@ export default function AttendanceScreen({ navigation }) {
 
   return (
     <Screen onRefresh={refresh} refreshing={refreshing}>
+      <Button
+        title="Scan attendance"
+        icon="qr-code-outline"
+        variant="secondary"
+        onPress={() => navigation.navigate('ScanAttendance')}
+        style={styles.section}
+      />
       {body}
     </Screen>
   );

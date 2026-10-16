@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../context/ThemeContext';
 import api, { reportError } from '../../../services/api';
 import { attendanceTone, radius, space } from '../../../theme';
@@ -227,10 +228,26 @@ function MarkAttendance({ students, setStudents, subjectId }) {
   );
 }
 
-function ProfessorAttendance({ students, setStudents, subjectId }) {
+function ProfessorAttendance({ students, setStudents, subjectId, subjectName }) {
+  const navigation = useNavigation();
   const [view, setView] = useState('mark');
+  const [starting, setStarting] = useState(false);
+
+  const startQr = async () => {
+    setStarting(true);
+    try {
+      const { data } = await api.post('/attendance/sessions', { subject_id: subjectId });
+      navigation.navigate('AttendanceSession', { sessionId: data.id, subjectName });
+    } catch (e) {
+      Alert.alert('Could not start', e.response?.data?.error || 'Try again in a moment.');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   return (
     <View>
+      <Button title="Take attendance by QR" icon="qr-code-outline" onPress={startQr} loading={starting} style={styles.block} />
       <SegmentedControl
         options={[{ value: 'mark', label: 'Mark attendance' }, { value: 'report', label: 'View report' }]}
         value={view}
@@ -244,10 +261,10 @@ function ProfessorAttendance({ students, setStudents, subjectId }) {
   );
 }
 
-export default function AttendanceTab({ user, attendance, students, setStudents, subjectId }) {
+export default function AttendanceTab({ user, attendance, students, setStudents, subjectId, subjectName }) {
   if (user?.role === 'student') return <StudentAttendance attendance={attendance} />;
   if (user?.role === 'professor') {
-    return <ProfessorAttendance students={students} setStudents={setStudents} subjectId={subjectId} />;
+    return <ProfessorAttendance students={students} setStudents={setStudents} subjectId={subjectId} subjectName={subjectName} />;
   }
   return <EmptyState icon="checkmark-circle-outline" title="Attendance is managed by the subject's professor" />;
 }

@@ -74,6 +74,7 @@ export default function SubjectDetailScreen({ route }) {
         students={students}
         setStudents={setStudents}
         subjectId={subject.id}
+        subjectName={subject.name}
       />
     );
   }
