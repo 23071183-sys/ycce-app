@@ -44,20 +44,9 @@ const darkRoles = {
   dangerSoft: 'rgba(255,69,58,0.16)',
 };
 
-// The names screens used before the redesign. They point at the new roles so
-// existing screens keep working while they are moved over; remove once no
-// screen reads them.
-const legacy = (r, purple) => ({
-  card: r.surface,
-  cardAlt: r.surfaceAlt,
-  textSec: r.textSecondary,
-  blue: r.accent,
-  purple,
-});
-
 export const palette = {
-  light: { ...lightRoles, ...legacy(lightRoles, '#AF52DE') },
-  dark: { ...darkRoles, ...legacy(darkRoles, '#BF5AF2') },
+  light: lightRoles,
+  dark: darkRoles,
 };
 
 // Kept for anything that still imports them directly.
