@@ -26,6 +26,7 @@ export default function useApi(path, { params, initialData = null } = {}) {
       if (!mounted.current) return;
       setData(res.data);
       setError(null);
+      return res.data;
     } catch (err) {
       reportError(err);
       if (mounted.current) setError(err);
