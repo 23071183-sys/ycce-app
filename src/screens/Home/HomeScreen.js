@@ -104,6 +104,7 @@ export default function HomeScreen({ navigation }) {
     { label: 'Compufest', icon: 'code-slash-outline',         screen: 'Compufest', color: c.warning },
     { label: 'Yash Fest', icon: 'star-outline',               screen: 'Fest',      color: c.purple },
     { label: 'Ask AI',    icon: 'chatbubble-ellipses-outline', screen: 'Chat',      color: c.blue },
+    ...(user?.role === 'student' ? [{ label: 'Results', icon: 'bar-chart-outline', screen: 'Results', color: c.success }] : []),
   ];
 
   return (
