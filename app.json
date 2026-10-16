@@ -2,11 +2,10 @@
   "expo": {
     "name": "ycce-app",
     "slug": "ycce-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -26,7 +25,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
@@ -39,6 +37,28 @@
           "icon": "./assets/icon.png",
           "color": "#B91C1C",
           "sounds": []
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow YCCE CT to use the camera to scan attendance and event QR codes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow YCCE CT to check you're on campus when you scan attendance."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow YCCE CT to use a photo as your profile picture.",
+          "cameraPermission": "Allow YCCE CT to take a profile photo.",
+          "microphonePermission": false
         }
       ],
       "expo-status-bar"
