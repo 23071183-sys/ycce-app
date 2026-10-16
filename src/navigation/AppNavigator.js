@@ -16,7 +16,7 @@ import AttendanceDetailScreen from '../screens/Attendance/AttendanceDetailScreen
 import PendingApprovalsScreen from '../screens/Admin/PendingApprovalsScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import SubjectsScreen from '../screens/Subjects/SubjectsScreen';
-import SubjectDetailScreen from '../screens/Subjects/SubjectDetailScreen';
+import SubjectDetailScreen from '../screens/Subjects/SubjectDetail';
 import AttendanceScreen from '../screens/Attendance/AttendanceScreen';
 import AnnouncementsScreen from '../screens/Announcements/AnnouncementsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
