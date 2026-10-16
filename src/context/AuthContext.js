@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -34,6 +34,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef(null);
+  userRef.current = user;
 
   useEffect(() => {
     const loadAuth = async () => {
@@ -67,6 +69,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Re-reads the signed-in user's profile (or takes one the caller already has,
+  // e.g. from a profile update response) and keeps the stored copy in step.
+  const refreshUser = async (fresh) => {
+    const me = fresh || (await api.get('/users/me')).data;
+    const merged = { ...(userRef.current || {}), ...me };
+    setUser(merged);
+    await AsyncStorage.setItem('user', JSON.stringify(merged));
+    return merged;
+  };
+
   const logout = async () => {
     await AsyncStorage.multiRemove(['token', 'user']);
     setToken(null);
@@ -78,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
