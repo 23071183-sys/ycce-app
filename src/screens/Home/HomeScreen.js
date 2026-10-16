@@ -20,6 +20,7 @@ const LINKS = {
   results: { label: 'Results', icon: 'bar-chart-outline', screen: 'Results' },
   fees: { label: 'Fees', icon: 'wallet-outline', screen: 'Fees' },
   approvals: { label: 'Approvals', icon: 'person-add-outline', screen: 'PendingApprovals' },
+  placements: { label: 'Placements', icon: 'briefcase-outline', screen: 'Placements' },
   announcements: { label: 'Announcements', icon: 'megaphone-outline', screen: 'Announcements' },
 };
 
@@ -70,7 +71,7 @@ function StudentHome({ data, loading, navigation }) {
         ]}
       />
       <QuickLinks
-        links={[LINKS.timetable, LINKS.announcements, LINKS.results, LINKS.fees, LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
+        links={[LINKS.timetable, LINKS.announcements, LINKS.placements, LINKS.results, LINKS.fees, LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
         onOpen={(screen) => navigation.navigate(screen)}
       />
     </>
