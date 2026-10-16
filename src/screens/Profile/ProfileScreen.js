@@ -58,6 +58,9 @@ export default function ProfileScreen({ navigation }) {
   ].filter(Boolean);
 
   const academic = [
+    isStudent && {
+      key: 'announcements', title: 'Announcements', icon: 'megaphone-outline', onPress: () => navigation.navigate('Announcements'),
+    },
     isStudent && { key: 'results', title: 'Results', icon: 'bar-chart-outline', onPress: () => navigation.navigate('Results') },
     isStudent && { key: 'fees', title: 'Fees', icon: 'wallet-outline', onPress: () => navigation.navigate('Fees') },
     ['super_admin', 'professor'].includes(user?.role) && {

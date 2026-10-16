@@ -57,7 +57,7 @@ const TABS = {
 
 // Tab order per role.
 const ROLE_TABS = {
-  student: ['Home', 'Subjects', 'Attendance', 'Announcements', 'Messages', 'Profile'],
+  student: ['Home', 'Subjects', 'Attendance', 'Messages', 'Profile'],
   professor: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
   admin: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
   super_admin: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
@@ -145,6 +145,9 @@ function MainStack() {
       <Stack.Screen name="NewMessage" component={NewMessageScreen} options={{ title: 'New message' }} />
       <Stack.Screen name="Conversation" component={ConversationScreen} options={{ title: '' }} />
       <Stack.Screen name="Fees" component={FeesScreen} options={{ title: 'Fees' }} />
+      {/* Students reach announcements from Home and Profile rather than a tab;
+          for staff the tab of the same name is found first. */}
+      <Stack.Screen name="Announcements" component={AnnouncementsScreen} options={{ title: 'Announcements' }} />
       <Stack.Screen name="FeeDetail" component={FeeDetailScreen} options={{ title: 'Fee' }} />
     </Stack.Navigator>
   );
