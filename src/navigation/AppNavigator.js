@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, useThemeControls } from '../context/ThemeContext';
+import { useUnread } from '../context/UnreadContext';
+import useNotificationRouting from './useNotificationRouting';
 import { Icon } from '../components/ui';
 import YCCELogo from '../components/YCCELogo';
 import { type } from '../theme';
@@ -29,9 +31,13 @@ import FestScreen from '../screens/Events/FestScreen';
 import TimetableScreen from '../screens/Timetable/TimetableScreen';
 import FacultyScreen from '../screens/Faculty/FacultyScreen';
 import ChatScreen from '../screens/Chat/ChatScreen';
+import ConversationsScreen from '../screens/Messages/ConversationsScreen';
+import NewMessageScreen from '../screens/Messages/NewMessageScreen';
+import ConversationScreen from '../screens/Messages/ConversationScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const navigationRef = createNavigationContainerRef();
 
 // Each tab: route name, screen, Ionicons base name (the "-outline" variant is
 // used when unfocused) and an optional title for the header and tab label.
@@ -41,17 +47,18 @@ const TABS = {
   Classes: { name: 'Subjects', component: SubjectsScreen, icon: 'book', title: 'My classes' },
   Attendance: { component: AttendanceScreen, icon: 'checkmark-circle' },
   Announcements: { component: AnnouncementsScreen, icon: 'notifications' },
+  Messages: { component: ConversationsScreen, icon: 'chatbubbles', badge: 'unread' },
   // Named apart from the "Fest" stack route so navigate('Fest') stays unambiguous.
   Fest: { name: 'FestTab', component: FestScreen, icon: 'star', title: 'Fest' },
   Profile: { component: ProfileScreen, icon: 'person' },
 };
 
-// Tab order per role. Students get a Messages tab here later.
+// Tab order per role.
 const ROLE_TABS = {
-  student: ['Home', 'Subjects', 'Attendance', 'Announcements', 'Profile'],
-  professor: ['Home', 'Classes', 'Announcements', 'Profile'],
-  admin: ['Home', 'Classes', 'Announcements', 'Profile'],
-  super_admin: ['Home', 'Classes', 'Announcements', 'Profile'],
+  student: ['Home', 'Subjects', 'Attendance', 'Announcements', 'Messages', 'Profile'],
+  professor: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
+  admin: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
+  super_admin: ['Home', 'Classes', 'Announcements', 'Messages', 'Profile'],
   fest_admin: ['Home', 'Fest', 'Announcements', 'Profile'],
 };
 
@@ -75,6 +82,7 @@ function MainTabs() {
   const c = useTheme();
   const header = useHeaderOptions();
   const { user } = useAuth();
+  const { total: unread } = useUnread();
   const keys = ROLE_TABS[user?.role] || ROLE_TABS.student;
   return (
     <Tab.Navigator
@@ -89,6 +97,7 @@ function MainTabs() {
           elevation: 0,
         },
         tabBarLabelStyle: styles.tabLabel,
+        tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentFg, fontSize: 10 },
       }}
     >
       {keys.map((key) => {
@@ -101,6 +110,7 @@ function MainTabs() {
             component={tab.component}
             options={{
               ...(tab.title ? { title: tab.title } : null),
+              ...(tab.badge === 'unread' && unread > 0 ? { tabBarBadge: unread > 99 ? '99+' : unread } : null),
               tabBarIcon: ({ focused, color }) => (
                 <Icon name={focused ? tab.icon : `${tab.icon}-outline`} size={22} color={color} />
               ),
@@ -130,6 +140,8 @@ function MainStack() {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
       <Stack.Screen name="Appearance" component={AppearanceScreen} options={{ title: 'Appearance' }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: 'Notifications' }} />
+      <Stack.Screen name="NewMessage" component={NewMessageScreen} options={{ title: 'New message' }} />
+      <Stack.Screen name="Conversation" component={ConversationScreen} options={{ title: '' }} />
     </Stack.Navigator>
   );
 }
@@ -138,6 +150,8 @@ export default function AppNavigator() {
   const { user, loading } = useAuth();
   const c = useTheme();
   const { navTheme } = useThemeControls();
+  const [navReady, setNavReady] = useState(false);
+  useNotificationRouting(navigationRef, { ready: navReady, signedIn: Boolean(user) });
   // Restoring the session takes a moment; a themed spinner beats a blank screen.
   if (loading) {
     return (
@@ -148,7 +162,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme} onReady={() => setNavReady(true)}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
           <Stack.Screen name="Main" component={MainStack} />
