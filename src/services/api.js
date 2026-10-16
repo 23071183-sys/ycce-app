@@ -47,6 +47,9 @@ const api = axios.create({
 const WAKE_RETRY_STATUSES = [502, 503, 504];
 const WAKE_RETRY_DELAYS_MS = [2000, 5000, 10000];
 
+// AI generation (quiz, flashcards, study plan) can take a minute or more.
+export const AI_TIMEOUT_MS = 150000;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 let _logoutCallback = null;
@@ -70,7 +73,10 @@ api.interceptors.response.use(
     }
 
     const config = error.config;
-    if (config && WAKE_RETRY_STATUSES.includes(error.response?.status)) {
+    // A JSON { error } body means our server itself answered (e.g. the AI is
+    // unavailable); only Render's own wake-up responses are worth retrying.
+    const fromOurServer = typeof error.response?.data?.error === 'string';
+    if (config && !fromOurServer && WAKE_RETRY_STATUSES.includes(error.response?.status)) {
       const attempt = config._wakeRetry ?? 0;
       if (attempt < WAKE_RETRY_DELAYS_MS.length) {
         config._wakeRetry = attempt + 1;

@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import api, { reportError } from '../../services/api';
+import api, { reportError, AI_TIMEOUT_MS } from '../../services/api';
 import { radius, space } from '../../theme';
 import { Button, Card, EmptyState, Screen, Skeleton, Text } from '../../components/ui';
 import { StudyErrorState, describeStudyError } from './studyErrors';
@@ -45,7 +45,7 @@ export default function FlashcardsScreen({ route, navigation }) {
   const generate = async () => {
     setGenerating(true); setGenerateError(null);
     try {
-      await api.post(`/study/flashcards/${subjectId}/generate`);
+      await api.post(`/study/flashcards/${subjectId}/generate`, undefined, { timeout: AI_TIMEOUT_MS });
       await load();
     } catch (e) { setGenerateError(e); }
     finally { setGenerating(false); }
