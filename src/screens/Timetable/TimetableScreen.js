@@ -14,7 +14,9 @@ export default function TimetableScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.year) return;
+    // Without a year there is nothing to fetch; returning early left loading
+    // true, so the screen sat on the spinner forever.
+    if (!user?.year) { setLoading(false); return; }
     api.get(`/timetable/year/${user.year}`)
       .then(r => setEntries(r.data))
       .catch(reportError)
@@ -32,7 +34,12 @@ export default function TimetableScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16 }}>
-      <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Year {user?.year} Timetable</Text>
+      <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>{user?.year ? `Year ${user.year} Timetable` : 'Timetable'}</Text>
+      {entries.length === 0 && (
+        <Text style={{ fontSize: 14, color: c.textMuted, textAlign: 'center', marginTop: 40, lineHeight: 20 }}>
+          {user?.year ? 'No classes scheduled yet.' : 'Your year isn’t set, so there’s no timetable to show.'}
+        </Text>
+      )}
       {DAYS.map((day, di) => (
         byDay[day].length > 0 && (
           <View key={day} style={{ marginBottom: 20 }}>
