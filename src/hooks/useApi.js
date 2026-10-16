@@ -16,9 +16,11 @@ export default function useApi(path, { params, initialData = null } = {}) {
 
   useEffect(() => () => { mounted.current = false; }, []);
 
-  const load = useCallback(async (isRefresh = false) => {
+  // mode: 'load' shows the skeleton, 'refresh' the pull-to-refresh spinner,
+  // 'quiet' neither (for refetching when a screen regains focus).
+  const load = useCallback(async (mode = 'load') => {
     if (!path) { setLoading(false); return; }
-    if (isRefresh) setRefreshing(true); else setLoading(true);
+    if (mode === 'refresh') setRefreshing(true); else if (mode === 'load') setLoading(true);
     try {
       const res = await api.get(path, { params: JSON.parse(paramsKey) });
       if (!mounted.current) return;
@@ -32,9 +34,10 @@ export default function useApi(path, { params, initialData = null } = {}) {
     }
   }, [path, paramsKey]);
 
-  useEffect(() => { load(false); }, [load]);
+  useEffect(() => { load('load'); }, [load]);
 
-  const refresh = useCallback(() => load(true), [load]);
+  const refresh = useCallback(() => load('refresh'), [load]);
+  const revalidate = useCallback(() => load('quiet'), [load]);
 
-  return { data, setData, loading, error, refreshing, refresh, reload: () => load(false) };
+  return { data, setData, loading, error, refreshing, refresh, revalidate, reload: () => load('load') };
 }
