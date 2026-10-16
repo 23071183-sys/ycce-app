@@ -40,6 +40,10 @@ import CheckInScreen from '../screens/Events/CheckInScreen';
 import AttendanceSessionScreen from '../screens/QRAttendance/AttendanceSessionScreen';
 import ScanAttendanceScreen from '../screens/QRAttendance/ScanAttendanceScreen';
 import CalendarSyncScreen from '../screens/Calendar/CalendarSyncScreen';
+import StudyHomeScreen from '../screens/Study/StudyHomeScreen';
+import QuizScreen from '../screens/Study/QuizScreen';
+import FlashcardsScreen from '../screens/Study/FlashcardsScreen';
+import PlanScreen from '../screens/Study/PlanScreen';
 import PlacementsScreen from '../screens/Placements/PlacementsScreen';
 import PlacementDetailScreen from '../screens/Placements/PlacementDetailScreen';
 import FeeDetailScreen from '../screens/Fees/FeeDetailScreen';
@@ -160,6 +164,10 @@ function MainStack() {
       <Stack.Screen name="AttendanceSession" component={AttendanceSessionScreen} options={{ title: 'QR attendance' }} />
       <Stack.Screen name="ScanAttendance" component={ScanAttendanceScreen} options={{ title: 'Scan attendance' }} />
       <Stack.Screen name="CalendarSync" component={CalendarSyncScreen} options={{ title: 'Calendar sync' }} />
+      <Stack.Screen name="StudyHome" component={StudyHomeScreen} options={{ title: 'Study' }} />
+      <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
+      <Stack.Screen name="Flashcards" component={FlashcardsScreen} options={{ title: 'Flashcards' }} />
+      <Stack.Screen name="StudyPlan" component={PlanScreen} options={{ title: 'Study plan' }} />
       <Stack.Screen name="Placements" component={PlacementsScreen} options={{ title: 'Placements' }} />
       <Stack.Screen name="PlacementDetail" component={PlacementDetailScreen} options={{ title: 'Placement' }} />
       <Stack.Screen name="FeeDetail" component={FeeDetailScreen} options={{ title: 'Fee' }} />
