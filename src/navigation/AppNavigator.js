@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -98,7 +99,15 @@ function MainStack() {
 
 export default function AppNavigator() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  const c = useTheme();
+  // Restoring the session takes a moment; a themed spinner beats a blank screen.
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}>
+        <ActivityIndicator size="large" color={c.text} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
