@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import api, { reportError } from '../../services/api';
 import Monogram from '../../components/Monogram';
 import { space } from '../../theme';
 import {
-  Card, EmptyState, ErrorState, ListItem, Screen, SectionLabel, Skeleton, Text,
+  Card, EmptyState, ErrorState, Icon, ListItem, Screen, SectionLabel, Skeleton, Text,
 } from '../../components/ui';
 
 export default function SubjectsScreen({ navigation }) {
@@ -27,6 +27,17 @@ export default function SubjectsScreen({ navigation }) {
       .catch(e => { reportError(e); setError(e); })
       .finally(() => { setLoading(false); setRefreshing(false); });
   }, [user?.role, user?.year, user?.semester]);
+
+  useLayoutEffect(() => {
+    if (user?.role !== 'student') return;
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={() => navigation.navigate('StudyHome')} hitSlop={8} style={styles.headerButton} accessibilityLabel="Study">
+          <Icon name="school-outline" size={22} tone="default" />
+        </Pressable>
+      ),
+    });
+  }, [navigation, user?.role]);
 
   // Reload on focus so subjects added elsewhere show up when returning here.
   useFocusEffect(useCallback(() => { load(false); }, [load]));
@@ -72,6 +83,7 @@ export default function SubjectsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   header: { marginBottom: space.sm },
+  headerButton: { paddingHorizontal: space.lg },
   skeleton: { gap: space.md },
   inset: { paddingHorizontal: space.lg },
 });

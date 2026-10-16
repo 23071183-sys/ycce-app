@@ -22,6 +22,7 @@ const LINKS = {
   results: { label: 'Results', icon: 'bar-chart-outline', screen: 'Results' },
   fees: { label: 'Fees', icon: 'wallet-outline', screen: 'Fees' },
   approvals: { label: 'Approvals', icon: 'person-add-outline', screen: 'PendingApprovals' },
+  study: { label: 'Study', icon: 'school-outline', screen: 'StudyHome' },
   scan: { label: 'Scan attendance', icon: 'qr-code-outline', screen: 'ScanAttendance' },
   checkIn: { label: 'Check in', icon: 'scan-outline', screen: 'CheckIn' },
   placements: { label: 'Placements', icon: 'briefcase-outline', screen: 'Placements' },
@@ -75,7 +76,7 @@ function StudentHome({ data, loading, navigation }) {
         ]}
       />
       <QuickLinks
-        links={[LINKS.scan, LINKS.timetable, LINKS.announcements, LINKS.placements, LINKS.results, LINKS.fees, LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
+        links={[LINKS.study, LINKS.scan, LINKS.timetable, LINKS.announcements, LINKS.placements, LINKS.results, LINKS.fees, LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
         onOpen={(screen) => navigation.navigate(screen)}
       />
     </>

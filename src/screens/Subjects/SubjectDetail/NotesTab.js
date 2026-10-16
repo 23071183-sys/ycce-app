@@ -4,6 +4,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
 import { Button, Card, EmptyState, SectionLabel, Text, TextField } from '../../../components/ui';
 import { radius, space } from '../../../theme';
+import PapersSection from './PapersSection';
 import { Byline, CollapsibleForm, FileField, FileLink, UNITS, filePart, pickDocument, styles as shared } from './shared';
 
 function AddNoteForm({ subjectId, onAdded }) {
@@ -78,6 +79,8 @@ export default function NotesTab({ notes, subjectId, isProfessor, onChanged }) {
 
   return (
     <>
+      {isProfessor && <PapersSection subjectId={subjectId} />}
+      {isProfessor && <SectionLabel>Notes</SectionLabel>}
       {isProfessor && <AddNoteForm subjectId={subjectId} onAdded={onChanged} />}
       {notes.length === 0
         ? <EmptyState icon="document-text-outline" title="No notes yet" message="Notes posted for this subject will show here." />
