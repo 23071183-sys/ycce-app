@@ -1,83 +1,118 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
-import api, { reportError } from '../../services/api';
+import React, { useState } from 'react';
+import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import useApi from '../../hooks/useApi';
+import { space } from '../../theme';
+import {
+  Avatar, Card, EmptyState, ErrorState, Icon, InfoRow, Screen, Skeleton, Text,
+} from '../../components/ui';
 
-const ACCENTS = ['#0A84FF', '#30D158', '#FF9F0A', '#BF5AF2', '#FF453A', '#5AC8FA'];
+function FacultyCard({ item, isOpen, onToggle }) {
+  const c = useTheme();
+  const details = [
+    {
+      label: 'Joined',
+      value: item.joining_date
+        ? new Date(item.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : null,
+    },
+    { label: 'Teaching exp', value: item.teaching_exp },
+    { label: 'Industry exp', value: item.industrial_exp },
+    item.research_count && item.research_count !== '—' && { label: 'Research', value: `${item.research_count} Publications` },
+  ].filter(Boolean);
+
+  return (
+    <Card onPress={onToggle} style={styles.card}>
+      <View style={styles.head}>
+        <Avatar name={item.name} size={44} />
+        <View style={styles.flex}>
+          <Text variant="body">{item.name}</Text>
+          <Text variant="label" style={styles.designation}>{item.designation || 'Professor'}</Text>
+          {item.qualification ? <Text variant="caption" tone="muted">{item.qualification}</Text> : null}
+        </View>
+        <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} tone="muted" />
+      </View>
+
+      {isOpen && (
+        <View style={[styles.details, { borderTopColor: c.border }]}>
+          {details.map(d => <InfoRow key={d.label} label={d.label} value={d.value} />)}
+          <Pressable
+            onPress={() => item.email && Linking.openURL(`mailto:${item.email}`)}
+            style={[styles.email, { borderBottomColor: c.border }]}
+          >
+            <Text variant="callout" tone="muted">Email</Text>
+            <Text variant="callout" tone="accent" numberOfLines={1} style={styles.emailValue}>{item.email || '—'}</Text>
+          </Pressable>
+          {item.courses_taught && item.courses_taught !== '—' && (
+            <View style={styles.courses}>
+              <Text variant="label" style={styles.coursesLabel}>Courses taught</Text>
+              <Text variant="callout" tone="secondary">{item.courses_taught}</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </Card>
+  );
+}
 
 export default function FacultyScreen() {
   const c = useTheme();
-  const [faculty, setFaculty] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error, refreshing, refresh, reload } = useApi('/users/faculty', { initialData: [] });
   const [expanded, setExpanded] = useState(null);
 
-  useEffect(() => {
-    api.get('/users/faculty')
-      .then(r => setFaculty(r.data))
-      .catch(reportError)
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <ActivityIndicator style={{ flex: 1, backgroundColor: c.bg }} size="large" color={c.text} />;
+  if (loading) {
+    return (
+      <Screen>
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i} style={[styles.card, styles.head]}>
+            <Skeleton width={44} height={44} rounded={22} />
+            <View style={[styles.flex, styles.skeletonText]}>
+              <Skeleton width="60%" height={14} />
+              <Skeleton width="35%" height={10} />
+            </View>
+          </Card>
+        ))}
+      </Screen>
+    );
+  }
+  if (error) return <Screen onRefresh={refresh} refreshing={refreshing}><ErrorState onRetry={reload} /></Screen>;
 
   return (
     <FlatList
-      style={{ flex: 1, backgroundColor: c.bg }}
-      data={faculty}
+      style={{ backgroundColor: c.bg }}
+      data={data || []}
       keyExtractor={item => String(item.id)}
-      contentContainerStyle={{ padding: 16 }}
-      ListEmptyComponent={<Text style={{ textAlign: 'center', color: c.textMuted, marginTop: 40 }}>No faculty found.</Text>}
-      renderItem={({ item, index }) => {
-        const accent = ACCENTS[index % ACCENTS.length];
-        const isOpen = expanded === item.id;
-        const initials = item.name.split(' ').filter(w => w.match(/^[A-Z]/)).slice(0, 2).map(w => w[0]).join('') || item.name[0];
-
-        const InfoRow = ({ label, value, color, onPress }) => {
-          const Row = onPress ? TouchableOpacity : View;
-          return (
-            <Row style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: c.border }} onPress={onPress}>
-              <Text style={{ fontSize: 12, color: c.textMuted, flex: 1 }}>{label}</Text>
-              <Text style={{ fontSize: 12, color: color || c.textSec, fontWeight: '300', flex: 2, textAlign: 'right' }} numberOfLines={2}>{value || '—'}</Text>
-            </Row>
-          );
-        };
-
-        return (
-          <TouchableOpacity
-            style={{ backgroundColor: c.card, borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: accent, borderWidth: 0.5, borderColor: c.border }}
-            onPress={() => setExpanded(isOpen ? null : item.id)}
-            activeOpacity={0.85}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: accent, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{initials}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '400', color: c.text }}>{item.name}</Text>
-                <Text style={{ fontSize: 11, color: c.textMuted, fontWeight: '600', marginTop: 3, letterSpacing: 0.5, textTransform: 'uppercase' }}>{item.designation || 'Professor'}</Text>
-                <Text style={{ fontSize: 11, color: c.border, marginTop: 2 }}>{item.qualification}</Text>
-              </View>
-              <Text style={{ color: accent, fontSize: 14 }}>{isOpen ? '▲' : '▼'}</Text>
-            </View>
-
-            {isOpen && (
-              <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: c.border }}>
-                <InfoRow label="📅 Joined" value={item.joining_date ? new Date(item.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : null} />
-                <InfoRow label="✉️ Email" value={item.email} color={accent} onPress={() => item.email && Linking.openURL(`mailto:${item.email}`)} />
-                <InfoRow label="🏫 Teaching Exp" value={item.teaching_exp} />
-                <InfoRow label="🏭 Industry Exp" value={item.industrial_exp} />
-                {item.research_count && item.research_count !== '—' && <InfoRow label="📄 Research" value={`${item.research_count} Publications`} />}
-                {item.courses_taught && item.courses_taught !== '—' && (
-                  <View style={{ marginTop: 12 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '600', color: c.textMuted, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Courses Taught</Text>
-                    <Text style={{ fontSize: 12, color: c.textMuted, lineHeight: 20, fontWeight: '300' }}>{item.courses_taught}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      }}
+      contentContainerStyle={styles.list}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.textMuted} colors={[c.accent]} />}
+      ListEmptyComponent={<EmptyState icon="people-outline" title="No faculty found" />}
+      renderItem={({ item }) => (
+        <FacultyCard
+          item={item}
+          isOpen={expanded === item.id}
+          onToggle={() => setExpanded(expanded === item.id ? null : item.id)}
+        />
+      )}
     />
   );
 }
+
+const styles = StyleSheet.create({
+  list: { padding: space.lg, paddingBottom: space.huge },
+  card: { marginBottom: space.md },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  flex: { flex: 1 },
+  designation: { marginTop: 2, marginBottom: 2 },
+  skeletonText: { gap: space.sm },
+  details: { marginTop: space.md, borderTopWidth: StyleSheet.hairlineWidth },
+  email: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: space.md,
+    gap: space.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  emailValue: { flexShrink: 1 },
+  courses: { marginTop: space.md },
+  coursesLabel: { marginBottom: space.xs },
+});
