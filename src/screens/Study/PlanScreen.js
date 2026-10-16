@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import api from '../../services/api';
+import api, { AI_TIMEOUT_MS } from '../../services/api';
 import useApi from '../../hooks/useApi';
 import { fmtDate } from '../../utils/format';
 import { space } from '../../theme';
@@ -22,7 +22,7 @@ function PlanForm({ onDone, compact }) {
   const generate = async () => {
     setBusy(true); setFailure(null);
     try {
-      const { data } = await api.post('/study/plan', { hours_per_day: Number(hours), weeks: Number(weeks) });
+      const { data } = await api.post('/study/plan', { hours_per_day: Number(hours), weeks: Number(weeks) }, { timeout: AI_TIMEOUT_MS });
       onDone(data);
     } catch (e) {
       if (describeStudyError(e)) setFailure(e);

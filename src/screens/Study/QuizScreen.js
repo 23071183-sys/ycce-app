@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import api from '../../services/api';
+import api, { AI_TIMEOUT_MS } from '../../services/api';
 import { radius, space } from '../../theme';
 import { Badge, Button, Card, Icon, Screen, SectionLabel, Skeleton, StatNumber, Text } from '../../components/ui';
 import { StudyErrorState } from './studyErrors';
@@ -49,7 +49,7 @@ export default function QuizScreen({ route, navigation }) {
   const load = async (fresh = false) => {
     setLoading(true); setError(null); setResult(null); setIndex(0); setAnswers([]); setSubmitError(null);
     try {
-      const { data } = await api.get(`/study/quiz/${subjectId}`, { params: fresh ? { fresh: 1 } : undefined });
+      const { data } = await api.get(`/study/quiz/${subjectId}`, { params: fresh ? { fresh: 1 } : undefined, timeout: AI_TIMEOUT_MS });
       setQuiz(data);
     } catch (e) { setError(e); }
     finally { setLoading(false); }
@@ -75,7 +75,7 @@ export default function QuizScreen({ route, navigation }) {
           <Skeleton height={18} />
           {[1, 2, 3, 4].map(i => <Skeleton key={i} height={44} />)}
         </Card>
-        <Text variant="caption" tone="muted" style={styles.center}>Writing questions from past papers can take a few seconds.</Text>
+        <Text variant="caption" tone="muted" style={styles.center}>Writing questions from past papers and notes can take up to a minute.</Text>
       </Screen>
     );
   }
