@@ -20,6 +20,9 @@ import SubjectDetailScreen from '../screens/Subjects/SubjectDetail';
 import AttendanceScreen from '../screens/Attendance/AttendanceScreen';
 import AnnouncementsScreen from '../screens/Announcements/AnnouncementsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+import EditProfileScreen from '../screens/Profile/EditProfileScreen';
+import AppearanceScreen from '../screens/Profile/AppearanceScreen';
+import NotificationSettingsScreen from '../screens/Profile/NotificationSettingsScreen';
 import ResultsScreen from '../screens/Results/ResultsScreen';
 import CompufestScreen from '../screens/Events/CompufestScreen';
 import FestScreen from '../screens/Events/FestScreen';
@@ -124,6 +127,9 @@ function MainStack() {
       <Stack.Screen name="PendingApprovals" component={PendingApprovalsScreen} options={{ title: 'Pending approvals' }} />
       <Stack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ title: 'Attendance detail' }} />
       <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Results' }} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
+      <Stack.Screen name="Appearance" component={AppearanceScreen} options={{ title: 'Appearance' }} />
+      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: 'Notifications' }} />
     </Stack.Navigator>
   );
 }
