@@ -35,6 +35,8 @@ import ConversationsScreen from '../screens/Messages/ConversationsScreen';
 import NewMessageScreen from '../screens/Messages/NewMessageScreen';
 import ConversationScreen from '../screens/Messages/ConversationScreen';
 import FeesScreen from '../screens/Fees/FeesScreen';
+import MyTicketsScreen from '../screens/Events/MyTicketsScreen';
+import CheckInScreen from '../screens/Events/CheckInScreen';
 import PlacementsScreen from '../screens/Placements/PlacementsScreen';
 import PlacementDetailScreen from '../screens/Placements/PlacementDetailScreen';
 import FeeDetailScreen from '../screens/Fees/FeeDetailScreen';
@@ -150,6 +152,8 @@ function MainStack() {
       {/* Students reach announcements from Home and Profile rather than a tab;
           for staff the tab of the same name is found first. */}
       <Stack.Screen name="Announcements" component={AnnouncementsScreen} options={{ title: 'Announcements' }} />
+      <Stack.Screen name="MyTickets" component={MyTicketsScreen} options={{ title: 'My tickets' }} />
+      <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check in' }} />
       <Stack.Screen name="Placements" component={PlacementsScreen} options={{ title: 'Placements' }} />
       <Stack.Screen name="PlacementDetail" component={PlacementDetailScreen} options={{ title: 'Placement' }} />
       <Stack.Screen name="FeeDetail" component={FeeDetailScreen} options={{ title: 'Fee' }} />
