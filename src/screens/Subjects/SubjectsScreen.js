@@ -1,65 +1,77 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import api, { reportError } from '../../services/api';
-import { useTheme } from '../../context/ThemeContext';
-
-const ACCENTS = ['#0A84FF', '#30D158', '#FF9F0A', '#FF453A', '#BF5AF2', '#5AC8FA', '#FF2D55'];
+import Monogram from '../../components/Monogram';
+import { space } from '../../theme';
+import {
+  Card, EmptyState, ErrorState, ListItem, Screen, SectionLabel, Skeleton, Text,
+} from '../../components/ui';
 
 export default function SubjectsScreen({ navigation }) {
   const { user } = useAuth();
-  const c = useTheme();
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchSubjects = useCallback(() => {
+  const load = useCallback((isRefresh = false) => {
     if (!user) return;
-    setLoading(true);
+    if (isRefresh) setRefreshing(true); else setLoading(true);
     const endpoint = user.role === 'professor'
       ? '/subjects/my-subjects'
       : `/subjects/year/${user.year}${user.semester ? `?semester=${user.semester}` : ''}`;
     api.get(endpoint)
-      .then(r => setSubjects(r.data))
-      .catch(reportError)
-      .finally(() => setLoading(false));
+      .then(r => { setSubjects(r.data); setError(null); })
+      .catch(e => { reportError(e); setError(e); })
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }, [user?.role, user?.year, user?.semester]);
 
-  useFocusEffect(fetchSubjects);
+  // Reload on focus so subjects added elsewhere show up when returning here.
+  useFocusEffect(useCallback(() => { load(false); }, [load]));
 
-  if (loading) return <ActivityIndicator style={{ flex: 1, backgroundColor: c.bg }} size="large" color={c.text} />;
+  let body;
+  if (loading) {
+    body = (
+      <Card style={styles.skeleton}>
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} height={40} />)}
+      </Card>
+    );
+  } else if (error) {
+    body = <ErrorState onRetry={() => load(false)} />;
+  } else if (!subjects.length) {
+    body = <EmptyState icon="book-outline" title="No subjects yet" message="Subjects assigned to you will show here." />;
+  } else {
+    body = (
+      <Card padded={false} style={styles.inset}>
+        {subjects.map((item, i) => (
+          <ListItem
+            key={String(item.id)}
+            leading={<Monogram name={item.name} />}
+            title={item.name}
+            subtitle={`${item.code} · ${item.professor_name || 'TBA'} · Year ${item.year} · Sem ${item.semester}`}
+            onPress={() => navigation.navigate('SubjectDetail', { subject: item })}
+            last={i === subjects.length - 1}
+          />
+        ))}
+      </Card>
+    );
+  }
 
   return (
-    <FlatList
-      data={subjects}
-      keyExtractor={i => String(i.id)}
-      style={{ flex: 1, backgroundColor: c.bg }}
-      contentContainerStyle={{ padding: 16 }}
-      ListHeaderComponent={
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>My Subjects</Text>
-          {user?.semester && <Text style={{ fontSize: 12, color: c.border, marginTop: 2 }}>Semester {user.semester}</Text>}
-        </View>
-      }
-      renderItem={({ item, index }) => {
-        const accent = ACCENTS[index % ACCENTS.length];
-        return (
-          <TouchableOpacity
-            style={{ backgroundColor: c.card, borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: accent, borderWidth: 0.5, borderColor: c.border }}
-            onPress={() => navigation.navigate('SubjectDetail', { subject: item, color: accent })}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: '400', color: c.text, flex: 1, marginRight: 8 }}>{item.name}</Text>
-              <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1, color: accent }}>{item.code}</Text>
-            </View>
-            <Text style={{ fontSize: 11, color: c.textMuted, marginBottom: 2 }}>👨‍🏫 {item.professor_name || 'TBA'}</Text>
-            <Text style={{ fontSize: 11, color: c.textMuted }}>📅 Year {item.year} · Semester {item.semester}</Text>
-            <View style={{ position: 'absolute', right: 16, top: '50%' }}>
-              <Text style={{ fontSize: 24, color: c.border }}>›</Text>
-            </View>
-          </TouchableOpacity>
-        );
-      }}
-    />
+    <Screen onRefresh={() => load(true)} refreshing={refreshing}>
+      <View style={styles.header}>
+        <SectionLabel>{user?.role === 'professor' ? 'Classes you teach' : 'My subjects'}</SectionLabel>
+        {user?.semester ? <Text variant="caption" tone="muted">Semester {user.semester}</Text> : null}
+      </View>
+      {body}
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { marginBottom: space.sm },
+  skeleton: { gap: space.md },
+  inset: { paddingHorizontal: space.lg },
+});
