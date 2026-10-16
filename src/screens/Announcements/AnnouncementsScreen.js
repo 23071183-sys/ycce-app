@@ -1,62 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import api, { reportError } from '../../services/api';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { fmtDate } from '../../utils/format';
+import { space } from '../../theme';
+import { Badge, Card, EmptyState, ErrorState, Screen, Skeleton, Text } from '../../components/ui';
 
 export default function AnnouncementsScreen() {
-  const c = useTheme();
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const requests = [api.get('/announcements/general')];
-        if (user?.year) requests.push(api.get(`/announcements/year/${user.year}`));
-        const results = await Promise.all(requests);
-        const all = results.flatMap(r => r.data);
-        const unique = Array.from(new Map(all.map(a => [a.id, a])).values())
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setAnnouncements(unique);
-      } catch (e) { reportError(e); }
-      finally { setLoading(false); }
-    };
-    fetch();
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    try {
+      const requests = [api.get('/announcements/general')];
+      if (user?.year) requests.push(api.get(`/announcements/year/${user.year}`));
+      const results = await Promise.all(requests);
+      const all = results.flatMap(r => r.data);
+      const unique = Array.from(new Map(all.map(a => [a.id, a])).values())
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setAnnouncements(unique);
+      setError(null);
+    } catch (e) { reportError(e); setError(e); }
+    finally { setLoading(false); setRefreshing(false); }
   }, [user]);
 
-  const fmt = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  useEffect(() => { load(); }, [load]);
 
-  if (loading) return <ActivityIndicator style={{ flex: 1, backgroundColor: c.bg }} size="large" color={c.text} />;
+  let body;
+  if (loading) {
+    body = [1, 2, 3].map(i => (
+      <Card key={i} style={[styles.card, styles.skeleton]}>
+        <Skeleton width="60%" height={16} />
+        <Skeleton height={12} />
+        <Skeleton width="40%" height={10} />
+      </Card>
+    ));
+  } else if (error) {
+    body = <ErrorState onRetry={() => load()} />;
+  } else if (!announcements.length) {
+    body = <EmptyState icon="notifications-outline" title="No announcements yet" message="College and class announcements will show here." />;
+  } else {
+    body = announcements.map(item => (
+      <Card key={String(item.id)} style={styles.card}>
+        <View style={styles.head}>
+          <Text variant="heading" style={styles.title}>{item.title}</Text>
+          {item.is_cancelled ? <Badge tone="danger">Cancelled</Badge> : null}
+        </View>
+        <Text variant="callout" tone="secondary" numberOfLines={3} style={styles.body}>{item.content}</Text>
+        <View style={styles.foot}>
+          <Text variant="caption" tone="muted" style={styles.title} numberOfLines={1}>By {item.posted_by_name}</Text>
+          <Text variant="caption" tone="muted">{fmtDate(item.created_at)}</Text>
+        </View>
+      </Card>
+    ));
+  }
 
   return (
-    <FlatList
-      style={{ flex: 1, backgroundColor: c.bg }}
-      data={announcements}
-      keyExtractor={i => String(i.id)}
-      contentContainerStyle={{ padding: 16 }}
-      ListHeaderComponent={
-        <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Announcements</Text>
-      }
-      ListEmptyComponent={<Text style={{ textAlign: 'center', color: c.textMuted, marginTop: 40 }}>No announcements yet.</Text>}
-      renderItem={({ item }) => (
-        <View style={{ backgroundColor: c.card, borderRadius: 12, padding: 16, marginBottom: 10, borderWidth: 0.5, borderColor: c.border }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-            <Text style={{ fontSize: 14, fontWeight: '500', color: c.text, flex: 1, marginRight: 8 }}>{item.title}</Text>
-            {item.is_cancelled && (
-              <View style={{ backgroundColor: c.danger, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>Cancelled</Text>
-              </View>
-            )}
-          </View>
-          <Text style={{ fontSize: 13, color: c.textSec, lineHeight: 20, fontWeight: '300' }} numberOfLines={3}>{item.content}</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-            <Text style={{ fontSize: 11, color: c.textMuted }}>By {item.posted_by_name}</Text>
-            <Text style={{ fontSize: 11, color: c.textMuted }}>{fmt(item.created_at)}</Text>
-          </View>
-        </View>
-      )}
-    />
+    <Screen onRefresh={() => load(true)} refreshing={refreshing}>
+      {body}
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  card: { marginBottom: space.md },
+  skeleton: { gap: space.sm },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  title: { flex: 1 },
+  body: { marginTop: space.xs },
+  foot: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm, marginTop: space.md },
+});
