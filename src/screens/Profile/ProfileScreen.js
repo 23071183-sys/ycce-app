@@ -4,6 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { useThemeControls } from '../../context/ThemeContext';
 import { reportError } from '../../services/api';
+import useApi from '../../hooks/useApi';
+import ProgressSection from './ProgressSection';
 import { Avatar, Card, Icon, InfoRow, ListItem, Screen, SectionLabel, Text } from '../../components/ui';
 import { space } from '../../theme';
 
@@ -39,12 +41,14 @@ export default function ProfileScreen({ navigation }) {
   const role = user?.role?.replace('_', ' ');
   const isStudent = user?.role === 'student';
 
+  const progress = useApi(isStudent ? '/progress/me' : null);
+
   // Pick up changes made on the web admin or another device.
   useFocusEffect(useCallback(() => { refreshUser().catch(reportError); }, []));
 
   const onRefresh = async () => {
     setRefreshing(true);
-    try { await refreshUser(); } catch (e) { reportError(e); }
+    try { await Promise.all([refreshUser(), progress.revalidate()]); } catch (e) { reportError(e); }
     finally { setRefreshing(false); }
   };
 
@@ -101,6 +105,8 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </Card>
       </View>
+
+      {isStudent ? <ProgressSection progress={progress.data} loading={progress.loading} /> : null}
 
       <Group rows={academic} />
       <Group title="Settings" rows={settings} />

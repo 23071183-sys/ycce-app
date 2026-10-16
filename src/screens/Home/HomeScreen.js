@@ -3,9 +3,11 @@ import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import useApi from '../../hooks/useApi';
-import { space } from '../../theme';
+import { radius, space } from '../../theme';
 import { fmtDate, fmtINR } from '../../utils/format';
-import { Card, ErrorState, ListItem, Screen, Text } from '../../components/ui';
+import { Card, ErrorState, Icon, ListItem, Screen, Text } from '../../components/ui';
+import { useTheme } from '../../context/ThemeContext';
+import { rememberNewBadges } from '../../utils/newBadges';
 import Monogram from '../../components/Monogram';
 import {
   AttendanceSection, DeadlinesSection, HomeSection, NoticesSection, NowNextSection, QuickLinks, StatTiles,
@@ -186,15 +188,20 @@ function OtherHome({ data, loading, navigation, role }) {
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
+  const c = useTheme();
   const { data, loading, error, refreshing, refresh, revalidate, reload } = useApi('/dashboard/me');
+  // The lecture streak is private to the student, so it only appears here and on their Profile.
+  const progress = useApi(user?.role === 'student' ? '/progress/me' : null);
+  rememberNewBadges(progress.data);
+  const streak = progress.data?.streaks?.lectures || 0;
 
   // Refetch quietly when coming back to Home, but not on the first focus,
   // which the initial load already covers.
   const focused = useRef(false);
   useFocusEffect(useCallback(() => {
-    if (focused.current) revalidate();
+    if (focused.current) { revalidate(); progress.revalidate(); }
     focused.current = true;
-  }, [revalidate]));
+  }, [revalidate, progress.revalidate]));
 
   const role = data?.role || user?.role;
   const name = data?.user?.name || user?.name;
@@ -218,6 +225,14 @@ export default function HomeScreen({ navigation }) {
         <Text variant="label">Welcome back</Text>
         <Text variant="display" style={styles.name}>{name?.split(' ')[0]}</Text>
         {details ? <Text variant="callout" tone="muted" style={styles.capitalize}>{details}</Text> : null}
+        {streak > 0 ? (
+          <View style={[styles.streak, { backgroundColor: c.surfaceAlt, borderColor: c.border }]}>
+            <Icon name="flame-outline" size={14} tone="default" />
+            <Text variant="caption" style={styles.streakText}>
+              {streak} lecture{streak === 1 ? '' : 's'} in a row
+            </Text>
+          </View>
+        ) : null}
       </View>
       {body}
     </Screen>
@@ -228,5 +243,17 @@ const styles = StyleSheet.create({
   greeting: { marginBottom: space.xxl },
   name: { marginTop: space.xs, marginBottom: space.xs },
   capitalize: { textTransform: 'capitalize' },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: space.xs,
+    marginTop: space.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs + 2,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  streakText: { fontWeight: '600' },
   inset: { paddingHorizontal: space.lg },
 });
