@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, useThemeControls } from '../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
-import CTLogo from '../components/CTLogo';
+import { Icon } from '../components/ui';
 import YCCELogo from '../components/YCCELogo';
+import { type } from '../theme';
 
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
@@ -30,58 +30,88 @@ import ChatScreen from '../screens/Chat/ChatScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-const ICONS = {
-  Home:          ['home',              'home-outline'],
-  Subjects:      ['book',              'book-outline'],
-  Attendance:    ['checkmark-circle',  'checkmark-circle-outline'],
-  Announcements: ['notifications',     'notifications-outline'],
-  Results:       ['bar-chart',         'bar-chart-outline'],
-  Profile:       ['person',            'person-outline'],
+// Each tab: route name, screen, Ionicons base name (the "-outline" variant is
+// used when unfocused) and an optional title for the header and tab label.
+const TABS = {
+  Home: { component: HomeScreen, icon: 'home', options: { headerTitle: () => <YCCELogo size={32} /> } },
+  Subjects: { component: SubjectsScreen, icon: 'book' },
+  Classes: { name: 'Subjects', component: SubjectsScreen, icon: 'book', title: 'My classes' },
+  Attendance: { component: AttendanceScreen, icon: 'checkmark-circle' },
+  Announcements: { component: AnnouncementsScreen, icon: 'notifications' },
+  // Named apart from the "Fest" stack route so navigate('Fest') stays unambiguous.
+  Fest: { name: 'FestTab', component: FestScreen, icon: 'star', title: 'Fest' },
+  Profile: { component: ProfileScreen, icon: 'person' },
 };
 
-const icon = (name, focused, color) => {
-  const [filled, outline] = ICONS[name] ?? ['ellipse', 'ellipse-outline'];
-  return <Ionicons name={focused ? filled : outline} size={22} color={color} />;
+// Tab order per role. Students get a Messages tab here later.
+const ROLE_TABS = {
+  student: ['Home', 'Subjects', 'Attendance', 'Announcements', 'Profile'],
+  professor: ['Home', 'Classes', 'Announcements', 'Profile'],
+  admin: ['Home', 'Classes', 'Announcements', 'Profile'],
+  super_admin: ['Home', 'Classes', 'Announcements', 'Profile'],
+  fest_admin: ['Home', 'Fest', 'Announcements', 'Profile'],
+};
+
+const useHeaderOptions = () => {
+  const c = useTheme();
+  return {
+    headerStyle: {
+      backgroundColor: c.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+      elevation: 0,
+      shadowOpacity: 0,
+    },
+    headerTintColor: c.text,
+    headerTitleStyle: { ...type.heading, color: c.text },
+    cardStyle: { backgroundColor: c.bg },
+  };
 };
 
 function MainTabs() {
-  const colors = useTheme();
-  const header = {
-    headerStyle: { backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-    headerTintColor: colors.text,
-    headerTitleStyle: { fontWeight: '300', color: colors.text, letterSpacing: 1, textTransform: 'uppercase', fontSize: 13 },
-  };
+  const c = useTheme();
+  const header = useHeaderOptions();
+  const { user } = useAuth();
+  const keys = ROLE_TABS[user?.role] || ROLE_TABS.student;
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color }) =>
-          route.name === 'Home'
-            ? <CTLogo size={26} />
-            : icon(route.name, focused, color),
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.card, borderTopWidth: 0.5, borderTopColor: colors.border, paddingBottom: 4 },
-        tabBarLabelStyle: { fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase', fontWeight: '400' },
+      screenOptions={{
         ...header,
-      })}
+        tabBarActiveTintColor: c.text,
+        tabBarInactiveTintColor: c.textMuted,
+        tabBarStyle: {
+          backgroundColor: c.surface,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: c.border,
+          elevation: 0,
+        },
+        tabBarLabelStyle: styles.tabLabel,
+      }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerTitle: () => <YCCELogo size={32} /> }} />
-      <Tab.Screen name="Subjects" component={SubjectsScreen} />
-      <Tab.Screen name="Attendance" component={AttendanceScreen} />
-      <Tab.Screen name="Announcements" component={AnnouncementsScreen} />
-      <Tab.Screen name="Results" component={ResultsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      {keys.map((key) => {
+        const tab = TABS[key];
+        const name = tab.name || key;
+        return (
+          <Tab.Screen
+            key={key}
+            name={name}
+            component={tab.component}
+            options={{
+              ...(tab.title ? { title: tab.title } : null),
+              tabBarIcon: ({ focused, color }) => (
+                <Icon name={focused ? tab.icon : `${tab.icon}-outline`} size={22} color={color} />
+              ),
+              ...tab.options,
+            }}
+          />
+        );
+      })}
     </Tab.Navigator>
   );
 }
 
 function MainStack() {
-  const colors = useTheme();
-  const header = {
-    headerStyle: { backgroundColor: colors.card, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-    headerTintColor: colors.text,
-    headerTitleStyle: { fontWeight: '300', color: colors.text, letterSpacing: 1, textTransform: 'uppercase', fontSize: 13 },
-  };
+  const header = useHeaderOptions();
   return (
     <Stack.Navigator screenOptions={header}>
       <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
@@ -91,8 +121,9 @@ function MainStack() {
       <Stack.Screen name="Compufest" component={CompufestScreen} options={{ title: 'Compufest' }} />
       <Stack.Screen name="Fest" component={FestScreen} options={{ title: 'Yash Fest' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'CT Assistant' }} />
-      <Stack.Screen name="PendingApprovals" component={PendingApprovalsScreen} options={{ title: 'Pending Approvals' }} />
-      <Stack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ title: 'Attendance Detail' }} />
+      <Stack.Screen name="PendingApprovals" component={PendingApprovalsScreen} options={{ title: 'Pending approvals' }} />
+      <Stack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ title: 'Attendance detail' }} />
+      <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Results' }} />
     </Stack.Navigator>
   );
 }
@@ -104,7 +135,7 @@ export default function AppNavigator() {
   // Restoring the session takes a moment; a themed spinner beats a blank screen.
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}>
+      <View style={[styles.splash, { backgroundColor: c.bg }]}>
         <ActivityIndicator size="large" color={c.text} />
       </View>
     );
@@ -118,11 +149,16 @@ export default function AppNavigator() {
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tabLabel: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
+});
