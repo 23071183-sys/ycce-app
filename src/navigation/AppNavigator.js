@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, useThemeControls } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import CTLogo from '../components/CTLogo';
 import YCCELogo from '../components/YCCELogo';
@@ -100,6 +100,7 @@ function MainStack() {
 export default function AppNavigator() {
   const { user, loading } = useAuth();
   const c = useTheme();
+  const { navTheme } = useThemeControls();
   // Restoring the session takes a moment; a themed spinner beats a blank screen.
   if (loading) {
     return (
@@ -110,7 +111,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
           <Stack.Screen name="Main" component={MainStack} />
