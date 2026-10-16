@@ -34,6 +34,8 @@ import ChatScreen from '../screens/Chat/ChatScreen';
 import ConversationsScreen from '../screens/Messages/ConversationsScreen';
 import NewMessageScreen from '../screens/Messages/NewMessageScreen';
 import ConversationScreen from '../screens/Messages/ConversationScreen';
+import FeesScreen from '../screens/Fees/FeesScreen';
+import FeeDetailScreen from '../screens/Fees/FeeDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -142,6 +144,8 @@ function MainStack() {
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="NewMessage" component={NewMessageScreen} options={{ title: 'New message' }} />
       <Stack.Screen name="Conversation" component={ConversationScreen} options={{ title: '' }} />
+      <Stack.Screen name="Fees" component={FeesScreen} options={{ title: 'Fees' }} />
+      <Stack.Screen name="FeeDetail" component={FeeDetailScreen} options={{ title: 'Fee' }} />
     </Stack.Navigator>
   );
 }
