@@ -1,74 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import api, { reportError } from '../../services/api';
-import { useTheme } from '../../context/ThemeContext';
+import React, { useState } from 'react';
+import useApi from '../../hooks/useApi';
+import { Card, EmptyState, ErrorState, Screen, SegmentedControl, Text } from '../../components/ui';
+import { EventCard, EventListSkeleton, fmtEventDate, styles } from './EventParts';
+
+const TABS = [{ value: 'events', label: 'Events' }, { value: 'announcements', label: 'Updates' }];
 
 export default function FestScreen() {
-  const c = useTheme();
-  const [events, setEvents] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('events');
+  const events = useApi('/fest/events', { initialData: [] });
+  const updates = useApi('/fest/announcements', { initialData: [] });
 
-  useEffect(() => {
-    Promise.all([api.get('/fest/events'), api.get('/fest/announcements')])
-      .then(([e, a]) => { setEvents(e.data); setAnnouncements(a.data); })
-      .catch(reportError).finally(() => setLoading(false));
-  }, []);
+  const loading = events.loading || updates.loading;
+  const error = events.error || updates.error;
+  const refreshing = events.refreshing || updates.refreshing;
+  const refresh = () => { events.refresh(); updates.refresh(); };
+  const reload = () => { events.reload(); updates.reload(); };
 
-  const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA';
-  const categoryColors = { Music: '#FF453A', Dance: '#FF9F0A', Drama: '#BF5AF2', Art: '#30D158', Literary: '#0A84FF' };
-
-  if (loading) return <ActivityIndicator style={{ flex: 1, backgroundColor: c.bg }} size="large" color={c.purple} />;
+  let body;
+  if (loading) body = <EventListSkeleton />;
+  else if (error) body = <ErrorState onRetry={reload} />;
+  else if (tab === 'events') {
+    body = events.data?.length
+      ? events.data.map(item => <EventCard key={String(item.id)} item={item} />)
+      : <EmptyState icon="star-outline" title="No events yet" message="Fest events will show here once they're announced." />;
+  } else {
+    body = updates.data?.length
+      ? updates.data.map(item => (
+        <Card key={String(item.id)} style={styles.card}>
+          <Text variant="heading">{item.title}</Text>
+          <Text variant="callout" tone="secondary" style={styles.body}>{item.content}</Text>
+          <Text variant="caption" tone="muted" style={styles.body}>{fmtEventDate(item.created_at)}</Text>
+        </Card>
+      ))
+      : <EmptyState icon="megaphone-outline" title="No announcements yet" />;
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <View style={{ flexDirection: 'row', backgroundColor: c.card, padding: 4, margin: 16, borderRadius: 10, borderWidth: 0.5, borderColor: c.border }}>
-        {['events', 'announcements'].map(t => (
-          <TouchableOpacity key={t} style={{ flex: 1, padding: 10, borderRadius: 8, alignItems: 'center', backgroundColor: tab === t ? c.purple : 'transparent' }} onPress={() => setTab(t)}>
-            <Text style={{ fontWeight: '600', fontSize: 13, color: tab === t ? '#fff' : c.textMuted }}>{t === 'events' ? 'Events' : 'Updates'}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {tab === 'events' ? (
-        <FlatList
-          data={events}
-          keyExtractor={i => String(i.id)}
-          contentContainerStyle={{ padding: 16, paddingTop: 0 }}
-          renderItem={({ item }) => (
-            <View style={{ backgroundColor: c.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: c.border }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                <Text style={{ fontSize: 14, fontWeight: '400', color: c.text, flex: 1, marginRight: 8 }}>{item.title}</Text>
-                {item.category && (
-                  <View style={{ borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: categoryColors[item.category] || c.textMuted }}>
-                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{item.category}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={{ fontSize: 12, color: c.textMuted, lineHeight: 19, marginBottom: 10, fontWeight: '300' }}>{item.description}</Text>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <Text style={{ fontSize: 11, color: c.textMuted }}>📅 {fmt(item.event_date)}</Text>
-                <Text style={{ fontSize: 11, color: c.textMuted }}>📍 {item.venue}</Text>
-              </View>
-            </View>
-          )}
-        />
-      ) : (
-        <FlatList
-          data={announcements}
-          keyExtractor={i => String(i.id)}
-          contentContainerStyle={{ padding: 16, paddingTop: 0 }}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', color: c.textMuted, marginTop: 40 }}>No announcements yet.</Text>}
-          renderItem={({ item }) => (
-            <View style={{ backgroundColor: c.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: c.border }}>
-              <Text style={{ fontSize: 14, fontWeight: '400', color: c.text, marginBottom: 6 }}>{item.title}</Text>
-              <Text style={{ fontSize: 12, color: c.textMuted, lineHeight: 19, marginBottom: 6, fontWeight: '300' }}>{item.content}</Text>
-              <Text style={{ fontSize: 11, color: c.textMuted }}>{fmt(item.created_at)}</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
+    <Screen onRefresh={refresh} refreshing={refreshing}>
+      <SegmentedControl options={TABS} value={tab} onChange={setTab} style={styles.tabs} />
+      {body}
+    </Screen>
   );
 }

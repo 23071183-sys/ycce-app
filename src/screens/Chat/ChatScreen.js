@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, TextInput, Pressable, StyleSheet,
   FlatList, KeyboardAvoidingView, Platform,
   ActivityIndicator, Linking,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { Icon, SectionLabel, Text } from '../../components/ui';
+import { radius, space, type } from '../../theme';
 
 const BASE_URL = api.defaults.baseURL?.replace('/api', '') || '';
 
@@ -41,8 +42,8 @@ export default function ChatScreen() {
   const SUGGESTIONS = isAdmin ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
 
   const greeting = isAdmin
-    ? `Hi ${user?.name?.split(' ')[0] || 'Admin'}! 🛠️ I'm your YCCE developer assistant.\n\nI can read and fix backend files, run DB queries, inspect routes, and diagnose issues — just describe the problem.`
-    : `Hi ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your YCCE CT assistant.\n\nI can fetch your live attendance, assignments, timetable, and even generate a PDF report — just ask!`;
+    ? `Hi ${user?.name?.split(' ')[0] || 'Admin'}! I'm your YCCE developer assistant.\n\nI can read and fix backend files, run DB queries, inspect routes, and diagnose issues — just describe the problem.`
+    : `Hi ${user?.name?.split(' ')[0] || 'there'}! I'm your YCCE CT assistant.\n\nI can fetch your live attendance, assignments, timetable, and even generate a PDF report — just ask!`;
 
   const [messages, setMessages] = useState([
     { role: 'assistant', content: greeting },
@@ -98,63 +99,46 @@ export default function ChatScreen() {
   const renderMessage = ({ item }) => {
     const isUser = item.role === 'user';
     return (
-      <View style={{
-        alignSelf: isUser ? 'flex-end' : 'flex-start',
-        maxWidth: '82%',
-        marginBottom: 12,
-        marginHorizontal: 16,
-      }}>
-        {!isUser && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 6 }}>
-            <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: c.text, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{ color: c.bg, fontSize: 10, fontWeight: '700' }}>CT</Text>
-            </View>
-            <Text style={{ fontSize: 10, color: c.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>Assistant</Text>
-          </View>
-        )}
+      <View style={[styles.message, isUser ? styles.mine : styles.theirs]}>
+        {!isUser && <AssistantTag />}
+        <View
+          style={[
+            styles.bubble,
+            isUser
+              ? [styles.bubbleMine, { backgroundColor: c.text }]
+              : [styles.bubbleTheirs, { backgroundColor: c.surface, borderColor: c.border }],
+          ]}
+        >
+          <Text variant="body" style={isUser && { color: c.bg }}>{item.content}</Text>
 
-        <View style={{
-          backgroundColor: isUser ? c.text : c.card,
-          borderRadius: 16,
-          borderBottomRightRadius: isUser ? 4 : 16,
-          borderBottomLeftRadius: isUser ? 16 : 4,
-          padding: 12,
-          borderWidth: isUser ? 0 : 0.5,
-          borderColor: c.border,
-        }}>
-          <Text style={{ fontSize: 14, color: isUser ? c.bg : c.text, lineHeight: 21, fontWeight: '300' }}>
-            {item.content}
-          </Text>
-
-          {/* PDF download button */}
           {item.pdf_url && (
-            <TouchableOpacity
+            <Pressable
               onPress={() => openPdf(item.pdf_url)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 8,
-                marginTop: 10, backgroundColor: c.bg,
-                borderRadius: 10, padding: 10,
-                borderWidth: 1, borderColor: c.border,
-              }}
+              style={({ pressed }) => [
+                styles.pdf,
+                { backgroundColor: pressed ? c.border : c.surfaceAlt, borderColor: c.border },
+              ]}
             >
-              <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#e8f0fe', justifyContent: 'center', alignItems: 'center' }}>
-                <Ionicons name="document-text-outline" size={18} color="#1a73e8" />
+              <View style={[styles.pdfIcon, { backgroundColor: c.accentSoft }]}>
+                <Icon name="document-text-outline" size={18} tone="accent" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a73e8' }}>Attendance Report.pdf</Text>
-                <Text style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>Tap to open</Text>
+              <View style={styles.flex}>
+                <Text variant="callout" style={styles.pdfName}>Attendance Report.pdf</Text>
+                <Text variant="caption" tone="muted">Tap to open</Text>
               </View>
-              <Ionicons name="download-outline" size={18} color="#1a73e8" />
-            </TouchableOpacity>
+              <Icon name="download-outline" size={18} tone="accent" />
+            </Pressable>
           )}
         </View>
       </View>
     );
   };
 
+  const canSend = Boolean(input.trim()) && !loading;
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: c.bg }}
+      style={[styles.flex, { backgroundColor: c.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={90}
     >
@@ -163,15 +147,13 @@ export default function ChatScreen() {
         data={messages}
         keyExtractor={(_, i) => String(i)}
         renderItem={renderMessage}
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 8 }}
+        contentContainerStyle={styles.list}
         onContentSizeChange={scrollToBottom}
         ListFooterComponent={
           loading ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 12 }}>
-              <View style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: c.text, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: c.bg, fontSize: 10, fontWeight: '700' }}>CT</Text>
-              </View>
-              <View style={{ backgroundColor: c.card, borderRadius: 16, borderBottomLeftRadius: 4, padding: 12, borderWidth: 0.5, borderColor: c.border }}>
+            <View style={[styles.message, styles.theirs]}>
+              <AssistantTag />
+              <View style={[styles.bubble, styles.bubbleTheirs, { backgroundColor: c.surface, borderColor: c.border }]}>
                 <ActivityIndicator size="small" color={c.textMuted} />
               </View>
             </View>
@@ -181,36 +163,28 @@ export default function ChatScreen() {
 
       {/* Suggestions — only at start */}
       {messages.length === 1 && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-          <Text style={{ fontSize: 10, color: c.textMuted, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Try asking</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={styles.suggestions}>
+          <SectionLabel>Try asking</SectionLabel>
+          <View style={styles.chips}>
             {SUGGESTIONS.map(s => (
-              <TouchableOpacity
+              <Pressable
                 key={s}
-                style={{ backgroundColor: c.card, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 0.5, borderColor: c.border }}
+                style={({ pressed }) => [
+                  styles.chip,
+                  { backgroundColor: pressed ? c.surfaceAlt : c.surface, borderColor: c.border },
+                ]}
                 onPress={() => send(s)}
               >
-                <Text style={{ fontSize: 12, color: c.textSec, fontWeight: '400' }}>{s}</Text>
-              </TouchableOpacity>
+                <Text variant="callout" tone="secondary">{s}</Text>
+              </Pressable>
             ))}
           </View>
         </View>
       )}
 
-      {/* Input bar */}
-      <View style={{
-        flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-        paddingHorizontal: 16, paddingVertical: 12,
-        borderTopWidth: 0.5, borderTopColor: c.border,
-        backgroundColor: c.card,
-      }}>
+      <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.surface }]}>
         <TextInput
-          style={{
-            flex: 1, backgroundColor: c.cardAlt, borderRadius: 22,
-            paddingHorizontal: 16, paddingVertical: 10,
-            fontSize: 14, color: c.text, maxHeight: 100,
-            borderWidth: 0.5, borderColor: c.border, fontWeight: '300',
-          }}
+          style={[type.body, styles.input, { backgroundColor: c.surfaceAlt, borderColor: c.border, color: c.text }]}
           placeholder="Ask anything..."
           placeholderTextColor={c.textMuted}
           value={input}
@@ -218,19 +192,73 @@ export default function ChatScreen() {
           multiline
           onSubmitEditing={() => send()}
         />
-        <TouchableOpacity
-          style={{
-            width: 40, height: 40, borderRadius: 20,
-            backgroundColor: input.trim() ? c.text : c.card,
-            justifyContent: 'center', alignItems: 'center',
-            borderWidth: 0.5, borderColor: c.border,
-          }}
+        <Pressable
+          style={[styles.send, { backgroundColor: canSend ? c.accent : c.surfaceAlt }]}
           onPress={() => send()}
           disabled={!input.trim() || loading}
+          accessibilityLabel="Send"
         >
-          <Ionicons name="arrow-up" size={18} color={input.trim() ? c.bg : c.textMuted} />
-        </TouchableOpacity>
+          <Icon name="arrow-up" size={18} color={canSend ? c.accentFg : c.textMuted} />
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+function AssistantTag() {
+  const c = useTheme();
+  return (
+    <View style={styles.tag}>
+      <View style={[styles.tagLogo, { backgroundColor: c.text }]}>
+        <Text variant="caption" style={[styles.tagLetters, { color: c.bg }]}>CT</Text>
+      </View>
+      <Text variant="label">Assistant</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  list: { paddingTop: space.lg, paddingBottom: space.sm },
+  message: { maxWidth: '82%', marginBottom: space.md, marginHorizontal: space.lg },
+  mine: { alignSelf: 'flex-end' },
+  theirs: { alignSelf: 'flex-start' },
+  bubble: { borderRadius: radius.xl, padding: space.md },
+  bubbleMine: { borderBottomRightRadius: radius.sm - 2 },
+  bubbleTheirs: { borderBottomLeftRadius: radius.sm - 2, borderWidth: StyleSheet.hairlineWidth },
+  pdf: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginTop: space.md,
+    borderRadius: radius.md,
+    padding: space.md - 2,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  pdfIcon: { width: 32, height: 32, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  pdfName: { fontWeight: '600' },
+  suggestions: { paddingHorizontal: space.lg, paddingBottom: space.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chip: { borderRadius: radius.full, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderWidth: StyleSheet.hairlineWidth },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: space.md - 2,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  input: {
+    flex: 1,
+    borderRadius: 22,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md - 2,
+    paddingBottom: space.md - 2,
+    maxHeight: 100,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: space.xs + 2, marginBottom: space.xs },
+  tagLogo: { width: 20, height: 20, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  tagLetters: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
+});

@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import api, { reportError } from '../../services/api';
-import { useTheme } from '../../context/ThemeContext';
-import CTLogo from '../../components/CTLogo';
+import { space } from '../../theme';
+import { Badge, Card, Icon, Screen, SectionLabel, Skeleton, Text } from '../../components/ui';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -17,7 +16,6 @@ function formatTime(t) {
 }
 
 function UpcomingClass({ user, navigation }) {
-  const c = useTheme();
   const [cls, setCls] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,99 +38,97 @@ function UpcomingClass({ user, navigation }) {
 
   useFocusEffect(fetchClass);
 
-  if (loading) return <ActivityIndicator style={{ marginBottom: 20 }} color={c.textMuted} />;
+  if (loading) {
+    return (
+      <Card style={[styles.block, styles.skeleton]}>
+        <Skeleton width={80} height={18} />
+        <Skeleton width="70%" height={16} />
+        <Skeleton width="50%" height={12} />
+      </Card>
+    );
+  }
   if (!cls) return null;
 
   const isOngoing = cls.status === 'ongoing';
-  const accent = isOngoing ? c.success : c.blue;
 
   return (
-    <TouchableOpacity
-      style={{ backgroundColor: c.card, borderRadius: 14, padding: 16, marginBottom: 24, borderLeftWidth: 4, borderLeftColor: accent, borderWidth: 0.5, borderColor: c.border }}
-      onPress={() => navigation.navigate('Timetable')}
-      activeOpacity={0.85}
-    >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, gap: 6, backgroundColor: accent + '20' }}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: accent }} />
-          <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 0.5, color: accent }}>{isOngoing ? 'Ongoing' : 'Up Next'}</Text>
-        </View>
-        <Text style={{ fontSize: 12, color: c.textMuted, fontWeight: '300', letterSpacing: 0.3 }}>
+    <Card onPress={() => navigation.navigate('Timetable')} style={styles.block}>
+      <View style={styles.classHead}>
+        <Badge tone={isOngoing ? 'success' : 'neutral'}>{isOngoing ? 'Ongoing' : 'Up next'}</Badge>
+        <Text variant="caption" tone="muted" style={styles.tabular}>
           {formatTime(cls.start_time)} – {formatTime(cls.end_time)}
         </Text>
       </View>
-      <Text style={{ fontSize: 16, fontWeight: '400', color: c.text, marginBottom: 10 }}>{cls.subject_name}</Text>
-      <View style={{ flexDirection: 'row', gap: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-          <Ionicons name="person-outline" size={13} color={c.textSec} />
-          <Text style={{ fontSize: 13, color: c.textSec }}>{cls.professor_name}</Text>
+      <Text variant="heading" style={styles.className}>{cls.subject_name}</Text>
+      <View style={styles.metaRow}>
+        <View style={styles.meta}>
+          <Icon name="person-outline" size={13} tone="muted" />
+          <Text variant="callout" tone="secondary">{cls.professor_name}</Text>
         </View>
         {cls.room ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Ionicons name="location-outline" size={13} color={c.textSec} />
-            <Text style={{ fontSize: 13, color: c.textSec }}>{cls.room}</Text>
+          <View style={styles.meta}>
+            <Icon name="location-outline" size={13} tone="muted" />
+            <Text variant="callout" tone="secondary">{cls.room}</Text>
           </View>
         ) : null}
       </View>
-    </TouchableOpacity>
-  );
-}
-
-function QuickCard({ card, c, navigation }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
-  const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start();
-  return (
-    <TouchableOpacity onPressIn={onPressIn} onPressOut={onPressOut} onPress={() => navigation.navigate(card.screen)} activeOpacity={1} style={{ width: '47%' }}>
-      <Animated.View style={{ transform: [{ scale }], backgroundColor: c.card, borderRadius: 12, padding: 20, borderTopWidth: 3, borderTopColor: card.color, borderWidth: 0.5, borderColor: c.border }}>
-        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: card.color + '18', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
-          <Ionicons name={card.icon} size={20} color={card.color} />
-        </View>
-        <Text style={{ fontSize: 13, fontWeight: '400', color: c.text, letterSpacing: 0.3 }}>{card.label}</Text>
-      </Animated.View>
-    </TouchableOpacity>
+    </Card>
   );
 }
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
-  const c = useTheme();
 
   const cards = [
-    { label: 'Timetable', icon: 'time-outline',               screen: 'Timetable', color: c.blue },
-    { label: 'Faculty',   icon: 'person-outline',             screen: 'Faculty',   color: c.success },
-    { label: 'Compufest', icon: 'code-slash-outline',         screen: 'Compufest', color: c.warning },
-    { label: 'Yash Fest', icon: 'star-outline',               screen: 'Fest',      color: c.purple },
-    { label: 'Ask AI',    icon: 'chatbubble-ellipses-outline', screen: 'Chat',      color: c.blue },
-    ...(user?.role === 'student' ? [{ label: 'Results', icon: 'bar-chart-outline', screen: 'Results', color: c.success }] : []),
+    { label: 'Timetable', icon: 'time-outline',                screen: 'Timetable' },
+    { label: 'Faculty',   icon: 'people-outline',              screen: 'Faculty' },
+    { label: 'Compufest', icon: 'code-slash-outline',          screen: 'Compufest' },
+    { label: 'Yash Fest', icon: 'star-outline',                screen: 'Fest' },
+    { label: 'Ask AI',    icon: 'chatbubble-ellipses-outline', screen: 'Chat' },
+    ...(user?.role === 'student' ? [{ label: 'Results', icon: 'bar-chart-outline', screen: 'Results' }] : []),
   ];
 
-  return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <View>
-          <Text style={{ fontSize: 13, fontWeight: '500', color: c.textMuted, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Welcome back</Text>
-          <Text style={{ fontSize: 28, fontWeight: '200', color: c.text, letterSpacing: 1 }}>{user?.name?.split(' ')[0]}</Text>
-          <Text style={{ fontSize: 11, color: c.textMuted, marginTop: 5, letterSpacing: 2, textTransform: 'uppercase' }}>{user?.role} · Year {user?.year} · {user?.roll_number}</Text>
-        </View>
-        <CTLogo size={48} />
-      </View>
+  const details = [
+    user?.role?.replace('_', ' '),
+    user?.year ? `Year ${user.year}` : null,
+    user?.roll_number,
+  ].filter(Boolean).join(' · ');
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <View style={{ backgroundColor: c.text, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 5 }}>
-          <Text style={{ color: c.bg, fontSize: 10, fontWeight: '600', letterSpacing: 2, textTransform: 'uppercase' }}>Computer Technology</Text>
-        </View>
-        <View style={{ height: 0.5, flex: 1, backgroundColor: c.border }} />
+  return (
+    <Screen>
+      <View style={styles.greeting}>
+        <Text variant="label">Welcome back</Text>
+        <Text variant="display" style={styles.name}>{user?.name?.split(' ')[0]}</Text>
+        {details ? <Text variant="callout" tone="muted" style={styles.capitalize}>{details}</Text> : null}
       </View>
 
       <UpcomingClass user={user} navigation={navigation} />
 
-      <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase' }}>Quick Access</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-        {cards.map((card) => (
-          <QuickCard key={card.label} card={card} c={c} navigation={navigation} />
+      <SectionLabel>Quick access</SectionLabel>
+      <View style={styles.grid}>
+        {cards.map(card => (
+          <Card key={card.label} onPress={() => navigation.navigate(card.screen)} style={styles.tile}>
+            <Icon name={card.icon} size={22} tone="default" />
+            <Text variant="body" style={styles.tileLabel}>{card.label}</Text>
+          </Card>
         ))}
       </View>
-    </ScrollView>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  greeting: { marginBottom: space.xxl },
+  name: { marginTop: space.xs, marginBottom: space.xs },
+  capitalize: { textTransform: 'capitalize' },
+  block: { marginBottom: space.xxl },
+  skeleton: { gap: space.sm },
+  classHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  className: { marginTop: space.md, marginBottom: space.sm },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space.xs + 1 },
+  tabular: { fontVariant: ['tabular-nums'] },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md },
+  tile: { width: '48.5%', minHeight: 96, justifyContent: 'space-between' },
+  tileLabel: { marginTop: space.md },
+});
