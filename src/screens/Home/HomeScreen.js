@@ -20,6 +20,7 @@ const LINKS = {
   results: { label: 'Results', icon: 'bar-chart-outline', screen: 'Results' },
   fees: { label: 'Fees', icon: 'wallet-outline', screen: 'Fees' },
   approvals: { label: 'Approvals', icon: 'person-add-outline', screen: 'PendingApprovals' },
+  checkIn: { label: 'Check in', icon: 'scan-outline', screen: 'CheckIn' },
   placements: { label: 'Placements', icon: 'briefcase-outline', screen: 'Placements' },
   announcements: { label: 'Announcements', icon: 'megaphone-outline', screen: 'Announcements' },
 };
@@ -163,19 +164,19 @@ function AdminHome({ data, loading, navigation, role }) {
       />
       <NoticesSection notices={data?.notices} loading={loading} onOpen={() => navigation.navigate('Announcements')} />
       <QuickLinks
-        links={[LINKS.timetable, ...(canApprove ? [LINKS.approvals] : []), LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
+        links={[LINKS.timetable, ...(canApprove ? [LINKS.approvals] : []), LINKS.checkIn, LINKS.faculty, LINKS.chat, LINKS.compufest, LINKS.fest]}
         onOpen={(screen) => navigation.navigate(screen)}
       />
     </>
   );
 }
 
-function OtherHome({ data, loading, navigation }) {
+function OtherHome({ data, loading, navigation, role }) {
   return (
     <>
       <NoticesSection notices={data?.notices} loading={loading} onOpen={() => navigation.navigate('Announcements')} />
       <QuickLinks
-        links={[LINKS.fest, LINKS.compufest, LINKS.timetable, LINKS.faculty, LINKS.chat]}
+        links={[LINKS.fest, LINKS.compufest, ...(role === 'fest_admin' ? [LINKS.checkIn] : []), LINKS.timetable, LINKS.faculty, LINKS.chat]}
         onOpen={(screen) => navigation.navigate(screen)}
       />
     </>
@@ -208,7 +209,7 @@ export default function HomeScreen({ navigation }) {
   else if (role === 'student') body = <StudentHome data={data} loading={loading} navigation={navigation} />;
   else if (role === 'professor') body = <ProfessorHome data={data} loading={loading} navigation={navigation} />;
   else if (ADMIN_ROLES.includes(role)) body = <AdminHome data={data} loading={loading} navigation={navigation} role={role} />;
-  else body = <OtherHome data={data} loading={loading} navigation={navigation} />;
+  else body = <OtherHome data={data} loading={loading} navigation={navigation} role={role} />;
 
   return (
     <Screen onRefresh={refresh} refreshing={refreshing}>

@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import useApi from '../../hooks/useApi';
 import { Card, EmptyState, ErrorState, Screen, SegmentedControl, Text } from '../../components/ui';
 import { EventCard, EventListSkeleton, fmtEventDate, styles } from './EventParts';
+import useEventRegistration from './useEventRegistration';
 
 const TABS = [{ value: 'events', label: 'Events' }, { value: 'announcements', label: 'Updates' }];
 
-export default function FestScreen() {
+export default function FestScreen({ navigation }) {
   const [tab, setTab] = useState('events');
   const events = useApi('/fest/events', { initialData: [] });
   const updates = useApi('/fest/announcements', { initialData: [] });
+  const reg = useEventRegistration('fest', navigation);
 
   const loading = events.loading || updates.loading;
   const error = events.error || updates.error;
   const refreshing = events.refreshing || updates.refreshing;
-  const refresh = () => { events.refresh(); updates.refresh(); };
+  const refresh = () => { events.refresh(); updates.refresh(); reg.refreshCounts(); };
   const reload = () => { events.reload(); updates.reload(); };
 
   let body;
@@ -21,7 +23,16 @@ export default function FestScreen() {
   else if (error) body = <ErrorState onRetry={reload} />;
   else if (tab === 'events') {
     body = events.data?.length
-      ? events.data.map(item => <EventCard key={String(item.id)} item={item} />)
+      ? events.data.map(item => (
+        <EventCard
+          key={String(item.id)}
+          item={item}
+          counts={reg.countsFor(item.id)}
+          busy={reg.busyId === item.id}
+          onRegister={() => reg.register(item.id)}
+          onCancel={() => reg.cancel(item.id, item.title)}
+        />
+      ))
       : <EmptyState icon="star-outline" title="No events yet" message="Fest events will show here once they're announced." />;
   } else {
     body = updates.data?.length

@@ -4,18 +4,20 @@ import useApi from '../../hooks/useApi';
 import { space } from '../../theme';
 import { Avatar, Badge, Card, EmptyState, ErrorState, ListItem, Screen, SegmentedControl } from '../../components/ui';
 import { EventCard, EventListSkeleton, styles as eventStyles } from './EventParts';
+import useEventRegistration from './useEventRegistration';
 
 const TABS = [{ value: 'committee', label: 'Committee' }, { value: 'events', label: 'Events' }];
 
-export default function CompufestScreen() {
+export default function CompufestScreen({ navigation }) {
   const [tab, setTab] = useState('committee');
   const events = useApi('/compufest/events', { initialData: [] });
   const committee = useApi('/compufest/committee', { initialData: [] });
+  const reg = useEventRegistration('compufest', navigation);
 
   const loading = events.loading || committee.loading;
   const error = events.error || committee.error;
   const refreshing = events.refreshing || committee.refreshing;
-  const refresh = () => { events.refresh(); committee.refresh(); };
+  const refresh = () => { events.refresh(); committee.refresh(); reg.refreshCounts(); };
   const reload = () => { events.reload(); committee.reload(); };
 
   let body;
@@ -27,7 +29,11 @@ export default function CompufestScreen() {
         <EventCard
           key={String(item.id)}
           item={item}
-          onRegister={item.registration_link ? () => Linking.openURL(item.registration_link) : undefined}
+          counts={reg.countsFor(item.id)}
+          busy={reg.busyId === item.id}
+          onRegister={() => reg.register(item.id)}
+          onCancel={() => reg.cancel(item.id, item.title)}
+          onExternal={item.registration_link ? () => Linking.openURL(item.registration_link) : undefined}
         />
       ))
       : <EmptyState icon="code-slash-outline" title="No events yet" message="Compufest events will show here once they're announced." />;

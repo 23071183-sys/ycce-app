@@ -15,9 +15,12 @@ function Meta({ icon, children }) {
   );
 }
 
-// One fest event: title, optional category tag, description, date and venue,
-// and a register button when there is a link.
-export function EventCard({ item, onRegister }) {
+// One fest event: title, optional category tag, description, date and venue.
+// counts is this event's row from /events/:type/counts; with it the card shows
+// seats taken and an in-app Register / Registered button. onExternal opens the
+// organiser's own registration link when there is one.
+export function EventCard({ item, counts, busy, onRegister, onCancel, onExternal }) {
+  const full = counts?.capacity != null && counts.registered >= counts.capacity && !counts?.mine;
   return (
     <Card style={styles.card}>
       <View style={styles.titleRow}>
@@ -29,7 +32,23 @@ export function EventCard({ item, onRegister }) {
         <Meta icon="calendar-outline">{fmtEventDate(item.event_date)}</Meta>
         {item.venue ? <Meta icon="location-outline">{item.venue}</Meta> : null}
       </View>
-      {onRegister ? <Button title="Register" size="sm" onPress={onRegister} style={styles.register} /> : null}
+      {counts ? (
+        <View style={styles.registerRow}>
+          <Text variant="caption" tone={full ? 'danger' : 'muted'} style={styles.seats}>
+            {counts.capacity != null
+              ? `${counts.registered}/${counts.capacity} registered${full ? ' · full' : ''}`
+              : `${counts.registered} registered`}
+          </Text>
+          {counts.mine ? (
+            <Button title="Registered" icon="checkmark" variant="secondary" size="sm" onPress={onCancel} loading={busy} />
+          ) : (
+            <Button title="Register" size="sm" onPress={onRegister} loading={busy} disabled={full} />
+          )}
+        </View>
+      ) : null}
+      {onExternal ? (
+        <Button title="Organiser's sign-up" icon="open-outline" variant="ghost" size="sm" onPress={onExternal} style={styles.register} />
+      ) : null}
     </Card>
   );
 }
@@ -52,6 +71,8 @@ export const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, marginTop: space.md },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   register: { marginTop: space.md },
+  registerRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
+  seats: { flex: 1 },
   skeleton: { gap: space.sm },
   tabs: { marginBottom: space.lg },
 });
