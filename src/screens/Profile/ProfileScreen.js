@@ -81,6 +81,7 @@ export default function ProfileScreen({ navigation }) {
       onPress: () => navigation.navigate('Appearance'),
     },
     { key: 'notifications', title: 'Notifications', icon: 'notifications-outline', onPress: () => navigation.navigate('NotificationSettings') },
+    { key: 'calendar', title: 'Calendar sync', icon: 'calendar-outline', onPress: () => navigation.navigate('CalendarSync') },
   ];
 
   return (

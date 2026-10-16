@@ -39,6 +39,7 @@ import MyTicketsScreen from '../screens/Events/MyTicketsScreen';
 import CheckInScreen from '../screens/Events/CheckInScreen';
 import AttendanceSessionScreen from '../screens/QRAttendance/AttendanceSessionScreen';
 import ScanAttendanceScreen from '../screens/QRAttendance/ScanAttendanceScreen';
+import CalendarSyncScreen from '../screens/Calendar/CalendarSyncScreen';
 import PlacementsScreen from '../screens/Placements/PlacementsScreen';
 import PlacementDetailScreen from '../screens/Placements/PlacementDetailScreen';
 import FeeDetailScreen from '../screens/Fees/FeeDetailScreen';
@@ -158,6 +159,7 @@ function MainStack() {
       <Stack.Screen name="CheckIn" component={CheckInScreen} options={{ title: 'Check in' }} />
       <Stack.Screen name="AttendanceSession" component={AttendanceSessionScreen} options={{ title: 'QR attendance' }} />
       <Stack.Screen name="ScanAttendance" component={ScanAttendanceScreen} options={{ title: 'Scan attendance' }} />
+      <Stack.Screen name="CalendarSync" component={CalendarSyncScreen} options={{ title: 'Calendar sync' }} />
       <Stack.Screen name="Placements" component={PlacementsScreen} options={{ title: 'Placements' }} />
       <Stack.Screen name="PlacementDetail" component={PlacementDetailScreen} options={{ title: 'Placement' }} />
       <Stack.Screen name="FeeDetail" component={FeeDetailScreen} options={{ title: 'Fee' }} />
