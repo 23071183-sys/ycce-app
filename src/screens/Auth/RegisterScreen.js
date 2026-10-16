@@ -1,28 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
-import CTLogo from '../../components/CTLogo';
-import YCCELogo from '../../components/YCCELogo';
+import { Alert, Pressable, StyleSheet } from 'react-native';
+import { Button, Card, SegmentedControl, Text, TextField } from '../../components/ui';
+import { AuthLayout, AuthLink, OtpBoxes, PasswordField } from './AuthParts';
 import api from '../../services/api';
+import { space } from '../../theme';
 
-const YEARS = ['1', '2', '3', '4'];
+const YEARS = ['1', '2', '3', '4'].map(y => ({ value: y, label: `Y${y}` }));
 
 export default function RegisterScreen({ navigation }) {
-  const c = useTheme();
-  const { login: authLogin } = useAuth();
-
   // Step 1 fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [year, setYear] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
   // Step 2
   const [step, setStep] = useState(1);
@@ -35,11 +26,6 @@ export default function RegisterScreen({ navigation }) {
   const timerRef = useRef(null);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
-
-  const inputStyle = {
-    backgroundColor: c.cardAlt, borderRadius: 10, padding: 14,
-    fontSize: 15, color: c.text, borderWidth: 0.5, borderColor: c.border, marginBottom: 12,
-  };
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -94,136 +80,63 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
+  if (step === 1) {
+    return (
+      <AuthLayout title="Create account">
+        <Card>
+          <TextField label="Full name" placeholder="Your full name" value={name} onChangeText={setName} />
+          <TextField
+            label="Email"
+            placeholder="23071189@ycce.in"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TextField
+            label="Roll number"
+            placeholder="e.g. 23071183"
+            value={rollNumber}
+            onChangeText={setRollNumber}
+            keyboardType="numbers-and-punctuation"
+          />
+          <Text variant="label" style={styles.label}>Year</Text>
+          <SegmentedControl options={YEARS} value={year} onChange={setYear} style={styles.years} />
+          <PasswordField label="Password" placeholder="Choose a password" value={password} onChangeText={setPassword} />
+          <Button title="Send OTP" onPress={sendOtp} loading={sending} style={styles.submit} />
+        </Card>
+        <AuthLink prompt="Already have an account?" action="Sign in" onPress={() => navigation.goBack()} />
+      </AuthLayout>
+    );
+  }
+
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={{ position: 'absolute', top: 60, left: 24 }}>
-        <YCCELogo size={40} />
-      </View>
-      <View style={{ position: 'absolute', top: 60, right: 24 }}>
-        <CTLogo size={40} />
-      </View>
-
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-
-        {step === 1 ? (
-          <>
-            <Text style={{ fontSize: 20, fontWeight: '200', color: c.text, textAlign: 'center', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6, lineHeight: 30 }}>Create Account</Text>
-            <View style={{ alignSelf: 'center', backgroundColor: c.text, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, marginBottom: 32, borderWidth: 1.5, borderColor: c.bg }}>
-              <Text style={{ fontSize: 10, color: c.bg, letterSpacing: 2.5, textTransform: 'uppercase', fontWeight: '600' }}>Computer Technology</Text>
-            </View>
-
-            <View style={{ backgroundColor: c.card, borderRadius: 16, padding: 24, borderWidth: 0.5, borderColor: c.border }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>Full Name</Text>
-              <TextInput style={inputStyle} placeholder="Your full name" placeholderTextColor={c.textMuted} value={name} onChangeText={setName} />
-
-              <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>Email</Text>
-              <TextInput style={inputStyle} placeholder="23071189@ycce.in" placeholderTextColor={c.textMuted} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-
-              <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>Roll Number</Text>
-              <TextInput style={inputStyle} placeholder="e.g. 23071183" placeholderTextColor={c.textMuted} value={rollNumber} onChangeText={setRollNumber} keyboardType="numbers-and-punctuation" />
-
-              <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>Year</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                {YEARS.map(y => (
-                  <TouchableOpacity
-                    key={y}
-                    style={{ flex: 1, padding: 12, borderRadius: 10, alignItems: 'center', backgroundColor: year === y ? c.text : c.cardAlt, borderWidth: 0.5, borderColor: c.border }}
-                    onPress={() => setYear(y)}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '400', color: year === y ? c.bg : c.textSec }}>Y{y}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={{ fontSize: 11, fontWeight: '600', color: c.textMuted, marginBottom: 8, letterSpacing: 1.5, textTransform: 'uppercase' }}>Password</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: c.cardAlt, borderRadius: 10, borderWidth: 0.5, borderColor: c.border, marginBottom: 20 }}>
-                <TextInput
-                  style={{ flex: 1, padding: 14, fontSize: 15, color: c.text }}
-                  placeholder="Choose a password"
-                  placeholderTextColor={c.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={{ paddingHorizontal: 14 }}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={c.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={{ backgroundColor: c.text, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                onPress={sendOtp}
-                disabled={sending}
-              >
-                {sending
-                  ? <ActivityIndicator color={c.bg} />
-                  : <Text style={{ color: c.bg, fontSize: 14, fontWeight: '300', letterSpacing: 1.5, textTransform: 'uppercase' }}>Send OTP</Text>
-                }
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={{ marginTop: 20, alignItems: 'center' }} onPress={() => navigation.goBack()}>
-              <Text style={{ fontSize: 13, color: c.textMuted }}>Already have an account? <Text style={{ color: c.text }}>Sign In</Text></Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={{ fontSize: 20, fontWeight: '200', color: c.text, textAlign: 'center', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Verify Email</Text>
-            <View style={{ alignSelf: 'center', backgroundColor: c.text, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, marginBottom: 32, borderWidth: 1.5, borderColor: c.bg }}>
-              <Text style={{ fontSize: 10, color: c.bg, letterSpacing: 2.5, textTransform: 'uppercase', fontWeight: '600' }}>Computer Technology</Text>
-            </View>
-
-            <View style={{ backgroundColor: c.card, borderRadius: 16, padding: 24, borderWidth: 0.5, borderColor: c.border }}>
-              <Text style={{ fontSize: 13, color: c.textMuted, textAlign: 'center', fontWeight: '300', marginBottom: 6 }}>OTP sent to</Text>
-              <Text style={{ fontSize: 14, color: c.text, textAlign: 'center', fontWeight: '400', marginBottom: 28, letterSpacing: 0.3 }}>{email}</Text>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
-                {otp.map((digit, i) => (
-                  <TextInput
-                    key={i}
-                    ref={ref => otpRefs.current[i] = ref}
-                    style={{
-                      width: 44, height: 54, borderRadius: 10, textAlign: 'center',
-                      fontSize: 22, fontWeight: '300', color: c.text,
-                      backgroundColor: c.cardAlt, borderWidth: digit ? 1.5 : 0.5,
-                      borderColor: digit ? c.text : c.border,
-                    }}
-                    maxLength={1}
-                    keyboardType="number-pad"
-                    value={digit}
-                    onChangeText={val => handleOtpChange(val, i)}
-                  />
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={{ backgroundColor: c.text, borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12 }}
-                onPress={verifyAndRegister}
-                disabled={verifying}
-              >
-                {verifying
-                  ? <ActivityIndicator color={c.bg} />
-                  : <Text style={{ color: c.bg, fontSize: 14, fontWeight: '300', letterSpacing: 1.5, textTransform: 'uppercase' }}>Verify & Register</Text>
-                }
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{ padding: 12, alignItems: 'center' }}
-                onPress={resendTimer === 0 ? sendOtp : undefined}
-                disabled={resendTimer > 0 || sending}
-              >
-                <Text style={{ fontSize: 13, color: resendTimer > 0 ? c.textMuted : c.text }}>
-                  {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={{ marginTop: 20, alignItems: 'center' }} onPress={() => setStep(1)}>
-              <Text style={{ fontSize: 13, color: c.textMuted }}>← Back to details</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <AuthLayout title="Verify email">
+      <Card>
+        <Text variant="callout" tone="muted" style={styles.center}>OTP sent to</Text>
+        <Text variant="body" style={[styles.center, styles.sentTo]}>{email}</Text>
+        <OtpBoxes otp={otp} inputRefs={otpRefs} onChangeDigit={handleOtpChange} />
+        <Button title="Verify & register" onPress={verifyAndRegister} loading={verifying} />
+        <Pressable
+          style={styles.resend}
+          onPress={resendTimer === 0 ? sendOtp : undefined}
+          disabled={resendTimer > 0 || sending}
+        >
+          <Text variant="callout" tone={resendTimer > 0 ? 'muted' : 'accent'}>
+            {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+          </Text>
+        </Pressable>
+      </Card>
+      <AuthLink icon="arrow-back" action="Back to details" onPress={() => setStep(1)} />
+    </AuthLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  label: { marginBottom: space.xs + 2 },
+  years: { marginBottom: space.md },
+  submit: { marginTop: space.sm },
+  center: { textAlign: 'center' },
+  sentTo: { marginTop: space.xs, marginBottom: space.xxl },
+  resend: { alignItems: 'center', paddingTop: space.md },
+});
