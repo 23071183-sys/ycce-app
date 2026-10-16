@@ -4,6 +4,24 @@ import { useAuth } from '../../context/AuthContext';
 import api, { reportError } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 
+// The component marks behind a subject's total. When the student sat RE-MSE
+// for a missed MSE, that score is shown in the slot it filled.
+const markBreakdown = (r) => {
+  const num = (v) => (v === null || v === undefined ? null : Number(v));
+  const slot = (key, label) => {
+    if (r.re_mse_for === key && r.re_mse_marks != null) return `${label} ${num(r.re_mse_marks)} (RE-MSE)`;
+    const v = num(r[`${key}_marks`]);
+    return v === null ? null : `${label} ${v}`;
+  };
+  const parts = [
+    slot('mse1', 'MSE 1'),
+    slot('mse2', 'MSE 2'),
+    num(r.ta_marks) === null ? null : `TA ${num(r.ta_marks)}`,
+    num(r.ese_marks) === null ? null : `ESE ${num(r.ese_marks)}`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+};
+
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const getSession = (semester, studentYear) => {
@@ -173,7 +191,12 @@ export default function ResultsScreen() {
                 {results.map((r, i) => (
                   <View key={r.id} style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: c.border, backgroundColor: i % 2 === 0 ? c.cardAlt + '80' : 'transparent' }}>
                     <Text style={{ fontSize: 12, color: c.textMuted, flex: 1.5, fontWeight: '300' }}>{r.subject_code}</Text>
-                    <Text style={{ fontSize: 12, color: c.text, flex: 3, fontWeight: '300' }}>{r.subject_name}</Text>
+                    <View style={{ flex: 3 }}>
+                      <Text style={{ fontSize: 12, color: c.text, fontWeight: '300' }}>{r.subject_name}</Text>
+                      {markBreakdown(r) ? (
+                        <Text style={{ fontSize: 10, color: c.textMuted, marginTop: 3 }}>{markBreakdown(r)}</Text>
+                      ) : null}
+                    </View>
                     <Text style={{ fontSize: 12, color: c.textSec, flex: 1, textAlign: 'center', fontWeight: '300' }}>{r.internal_marks ?? '—'}</Text>
                     <Text style={{ fontSize: 12, color: c.textSec, flex: 1, textAlign: 'center', fontWeight: '300' }}>{r.external_marks ?? '—'}</Text>
                     <Text style={{ fontSize: 12, flex: 1, textAlign: 'center', fontWeight: '700', color: gradeColor(r.grade) }}>{r.grade || '—'}</Text>
