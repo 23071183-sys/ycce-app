@@ -13,20 +13,22 @@ import {
   AttendanceSection, DeadlinesSection, HomeSection, NoticesSection, NowNextSection, QuickLinks, StatTiles,
 } from './HomeSections';
 
+// tint is a subject hue, brand a brand gradient: each link takes the colour
+// of the area it opens.
 const LINKS = {
-  timetable: { label: 'Timetable', icon: 'time-outline', screen: 'Timetable' },
-  faculty: { label: 'Faculty', icon: 'people-outline', screen: 'Faculty' },
-  compufest: { label: 'Compufest', icon: 'code-slash-outline', screen: 'Compufest' },
-  fest: { label: 'Yash Fest', icon: 'star-outline', screen: 'Fest' },
-  chat: { label: 'Ask AI', icon: 'chatbubble-ellipses-outline', screen: 'Chat' },
-  results: { label: 'Results', icon: 'bar-chart-outline', screen: 'Results' },
-  fees: { label: 'Fees', icon: 'wallet-outline', screen: 'Fees' },
-  approvals: { label: 'Approvals', icon: 'person-add-outline', screen: 'PendingApprovals' },
-  study: { label: 'Study', icon: 'school-outline', screen: 'StudyHome' },
-  scan: { label: 'Scan attendance', icon: 'qr-code-outline', screen: 'ScanAttendance' },
-  checkIn: { label: 'Check in', icon: 'scan-outline', screen: 'CheckIn' },
-  placements: { label: 'Placements', icon: 'briefcase-outline', screen: 'Placements' },
-  announcements: { label: 'Announcements', icon: 'megaphone-outline', screen: 'Announcements' },
+  timetable: { label: 'Timetable', icon: 'time-outline', screen: 'Timetable', tint: 'sky' },
+  faculty: { label: 'Faculty', icon: 'people-outline', screen: 'Faculty', tint: 'violet' },
+  compufest: { label: 'Compufest', icon: 'code-slash-outline', screen: 'Compufest', brand: 'compufest' },
+  fest: { label: 'Yash Fest', icon: 'star-outline', screen: 'Fest', brand: 'yash' },
+  chat: { label: 'Ask AI', icon: 'chatbubble-ellipses-outline', screen: 'Chat', brand: 'assistant' },
+  results: { label: 'Results', icon: 'bar-chart-outline', screen: 'Results', brand: 'results' },
+  fees: { label: 'Fees', icon: 'wallet-outline', screen: 'Fees', tint: 'amber' },
+  approvals: { label: 'Approvals', icon: 'person-add-outline', screen: 'PendingApprovals', tint: 'rose' },
+  study: { label: 'Study', icon: 'school-outline', screen: 'StudyHome', tint: 'teal' },
+  scan: { label: 'Scan attendance', icon: 'qr-code-outline', screen: 'ScanAttendance', tint: 'emerald' },
+  checkIn: { label: 'Check in', icon: 'scan-outline', screen: 'CheckIn', brand: 'yash' },
+  placements: { label: 'Placements', icon: 'briefcase-outline', screen: 'Placements', tint: 'indigo' },
+  announcements: { label: 'Announcements', icon: 'megaphone-outline', screen: 'Announcements', tint: 'orange' },
 };
 
 const ADMIN_ROLES = ['admin', 'super_admin'];
