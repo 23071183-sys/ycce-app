@@ -1,15 +1,13 @@
-import React, { useState, useRef } from 'react';
-import {
-  View, TextInput, Pressable, StyleSheet,
-  FlatList, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Linking,
-} from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Alert, FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import api, { AI_TIMEOUT_MS } from '../../services/api';
-import RichText from '../../components/RichText';
-import { Icon, SectionLabel, Text } from '../../components/ui';
-import { radius, space, type } from '../../theme';
+import api, { AI_TIMEOUT_MS, reportError } from '../../services/api';
+import { ErrorState, Icon, Skeleton } from '../../components/ui';
+import { space } from '../../theme';
+import {
+  ChatTitle, GreetingCard, InputBar, MessageBubble, Suggestions, TypingBubble, styles as chat,
+} from './ChatParts';
 
 const BASE_URL = api.defaults.baseURL?.replace('/api', '') || '';
 
@@ -35,26 +33,45 @@ const ADMIN_SUGGESTIONS = [
   'Run a query to inspect data',
 ];
 
-export default function ChatScreen() {
+const openPdf = (pdfPath) => {
+  const fullUrl = `${BASE_URL}${pdfPath}`;
+  Linking.openURL(fullUrl).catch(() =>
+    alert('Could not open PDF. Try again.')
+  );
+};
+
+function useScrollToBottom() {
+  const listRef = useRef(null);
+  const scrollToBottom = useCallback(
+    () => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100),
+    []
+  );
+  return [listRef, scrollToBottom];
+}
+
+function ChatLayout({ children, input, setInput, onSend, sending }) {
   const c = useTheme();
+  return (
+    <KeyboardAvoidingView
+      style={[chat.flex, { backgroundColor: c.bg }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={90}
+    >
+      {children}
+      <InputBar value={input} onChangeText={setInput} onSend={onSend} disabled={sending} />
+    </KeyboardAvoidingView>
+  );
+}
+
+// The admin developer assistant. Its conversation lives only on this screen
+// and is sent whole with every message, as before.
+function AdminChat() {
   const { user } = useAuth();
-  const isAdmin = ['super_admin', 'admin'].includes(user?.role);
-
-  const SUGGESTIONS = isAdmin ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
-
-  const greeting = isAdmin
-    ? `Hi ${user?.name?.split(' ')[0] || 'Admin'}! I'm your YCCE developer assistant.\n\nI can read and fix backend files, run DB queries, inspect routes, and diagnose issues — just describe the problem.`
-    : `Hi ${user?.name?.split(' ')[0] || 'there'}! I'm your YCCE CT assistant.\n\nI can fetch your live attendance, assignments, timetable, and even generate a PDF report — just ask!`;
-
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: greeting },
-  ]);
+  const greeting = `Hi ${user?.name?.split(' ')[0] || 'Admin'}! I'm your YCCE developer assistant.\n\nI can read and fix backend files, run DB queries, inspect routes, and diagnose issues — just describe the problem.`;
+  const [messages, setMessages] = useState([{ role: 'assistant', content: greeting }]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const listRef = useRef(null);
-
-  const scrollToBottom = () =>
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+  const [listRef, scrollToBottom] = useScrollToBottom();
 
   const send = async (text) => {
     const userText = (text || input).trim();
@@ -72,8 +89,7 @@ export default function ChatScreen() {
         .filter(m => m.role !== 'assistant' || updated.indexOf(m) > 0)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const endpoint = isAdmin ? '/chat/admin' : '/chat';
-      const { data } = await api.post(endpoint, { messages: apiMessages }, { timeout: AI_TIMEOUT_MS });
+      const { data } = await api.post('/chat/admin', { messages: apiMessages }, { timeout: AI_TIMEOUT_MS });
 
       setMessages(prev => [
         ...prev,
@@ -90,178 +106,165 @@ export default function ChatScreen() {
     }
   };
 
-  const openPdf = (pdfPath) => {
-    const fullUrl = `${BASE_URL}${pdfPath}`;
-    Linking.openURL(fullUrl).catch(() =>
-      alert('Could not open PDF. Try again.')
-    );
-  };
-
-  const renderMessage = ({ item }) => {
-    const isUser = item.role === 'user';
-    return (
-      <View style={[styles.message, isUser ? styles.mine : styles.theirs]}>
-        {!isUser && <AssistantTag />}
-        <View
-          style={[
-            styles.bubble,
-            isUser
-              ? [styles.bubbleMine, { backgroundColor: c.text }]
-              : [styles.bubbleTheirs, { backgroundColor: c.surface, borderColor: c.border }],
-          ]}
-        >
-          {isUser
-            ? <Text variant="body" style={{ color: c.bg }}>{item.content}</Text>
-            : <RichText>{item.content}</RichText>}
-
-          {item.pdf_url && (
-            <Pressable
-              onPress={() => openPdf(item.pdf_url)}
-              style={({ pressed }) => [
-                styles.pdf,
-                { backgroundColor: pressed ? c.border : c.surfaceAlt, borderColor: c.border },
-              ]}
-            >
-              <View style={[styles.pdfIcon, { backgroundColor: c.accentSoft }]}>
-                <Icon name="document-text-outline" size={18} tone="accent" />
-              </View>
-              <View style={styles.flex}>
-                <Text variant="callout" style={styles.pdfName}>Attendance Report.pdf</Text>
-                <Text variant="caption" tone="muted">Tap to open</Text>
-              </View>
-              <Icon name="download-outline" size={18} tone="accent" />
-            </Pressable>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  const canSend = Boolean(input.trim()) && !loading;
-
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: c.bg }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
-    >
+    <ChatLayout input={input} setInput={setInput} onSend={() => send()} sending={loading}>
       <FlatList
         ref={listRef}
         data={messages}
         keyExtractor={(_, i) => String(i)}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.list}
+        renderItem={({ item }) => <MessageBubble item={item} onOpenPdf={openPdf} />}
+        contentContainerStyle={chat.list}
         onContentSizeChange={scrollToBottom}
-        ListFooterComponent={
-          loading ? (
-            <View style={[styles.message, styles.theirs]}>
-              <AssistantTag />
-              <View style={[styles.bubble, styles.bubbleTheirs, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <ActivityIndicator size="small" color={c.textMuted} />
-              </View>
-            </View>
-          ) : null
-        }
+        ListFooterComponent={loading ? <TypingBubble /> : null}
       />
-
-      {/* Suggestions — only at start */}
-      {messages.length === 1 && (
-        <View style={styles.suggestions}>
-          <SectionLabel>Try asking</SectionLabel>
-          <View style={styles.chips}>
-            {SUGGESTIONS.map(s => (
-              <Pressable
-                key={s}
-                style={({ pressed }) => [
-                  styles.chip,
-                  { backgroundColor: pressed ? c.surfaceAlt : c.surface, borderColor: c.border },
-                ]}
-                onPress={() => send(s)}
-              >
-                <Text variant="callout" tone="secondary">{s}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      )}
-
-      <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.surface }]}>
-        <TextInput
-          style={[type.body, styles.input, { backgroundColor: c.surfaceAlt, borderColor: c.border, color: c.text }]}
-          placeholder="Ask anything..."
-          placeholderTextColor={c.textMuted}
-          value={input}
-          onChangeText={setInput}
-          multiline
-          onSubmitEditing={() => send()}
-        />
-        <Pressable
-          style={[styles.send, { backgroundColor: canSend ? c.accent : c.surfaceAlt }]}
-          onPress={() => send()}
-          disabled={!input.trim() || loading}
-          accessibilityLabel="Send"
-        >
-          <Icon name="arrow-up" size={18} color={canSend ? c.accentFg : c.textMuted} />
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+      {messages.length === 1 && <Suggestions items={ADMIN_SUGGESTIONS} onPick={send} />}
+    </ChatLayout>
   );
 }
 
-function AssistantTag() {
-  const c = useTheme();
-  return (
-    <View style={styles.tag}>
-      <View style={[styles.tagLogo, { backgroundColor: c.text }]}>
-        <Text variant="caption" style={[styles.tagLetters, { color: c.bg }]}>CT</Text>
+// The student / professor assistant. The server keeps the conversation and
+// anything the user asked it to remember, so only the new message is sent.
+function AssistantChat({ navigation }) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(null);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [listRef, scrollToBottom] = useScrollToBottom();
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const { data } = await api.get('/chat/history');
+      setMessages(data?.messages || []);
+      setHistoryError(null);
+    } catch (e) {
+      reportError(e);
+      setHistoryError(e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const newChat = useCallback(() => {
+    Alert.alert('Start a new chat?', 'This conversation will be cleared. Things you asked me to remember stay saved.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'New chat',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete('/chat/history');
+            setMessages([]);
+          } catch (e) {
+            Alert.alert('Could not start a new chat', e.response?.data?.error || 'Try again in a moment.');
+          }
+        },
+      },
+    ]);
+  }, []);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <Pressable onPress={() => navigation.navigate('Memories')} hitSlop={8} accessibilityLabel="Memories">
+            <Icon name="bookmark-outline" size={22} tone="default" />
+          </Pressable>
+          <Pressable onPress={newChat} hitSlop={8} accessibilityLabel="New chat">
+            <Icon name="create-outline" size={22} tone="default" />
+          </Pressable>
+        </View>
+      ),
+    });
+  }, [navigation, newChat]);
+
+  const send = async (text) => {
+    const userText = (text || input).trim();
+    if (!userText || sending) return;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userText }]);
+    setSending(true);
+    scrollToBottom();
+    try {
+      const { data } = await api.post('/chat', { message: userText }, { timeout: AI_TIMEOUT_MS });
+      const saved = Array.isArray(data.memory_saved) ? data.memory_saved : [];
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: data.reply,
+          pdf_url: data.pdf_url || null,
+          memory_note: saved.length ? saved.join(' · ') : null,
+        },
+      ]);
+    } catch (e) {
+      const msg = e.response?.data?.error || 'Sorry, something went wrong. Check your connection and try again.';
+      setMessages(prev => [...prev, { role: 'assistant', content: msg, error: true }]);
+    } finally {
+      setSending(false);
+      scrollToBottom();
+    }
+  };
+
+  const first = user?.name?.split(' ')[0] || 'there';
+  const empty = !historyLoading && !historyError && messages.length === 0;
+
+  let content;
+  if (historyLoading) {
+    content = (
+      <View style={styles.skeleton}>
+        <Skeleton width="70%" height={56} rounded={16} />
+        <Skeleton width="55%" height={40} rounded={16} style={styles.skeletonMine} />
+        <Skeleton width="80%" height={72} rounded={16} />
       </View>
-      <Text variant="label">Assistant</Text>
-    </View>
+    );
+  } else if (historyError && messages.length === 0) {
+    content = <View style={chat.flex}><ErrorState onRetry={loadHistory} /></View>;
+  } else {
+    content = (
+      <FlatList
+        ref={listRef}
+        data={messages}
+        keyExtractor={(item, i) => String(item.id ?? `local-${i}`)}
+        renderItem={({ item }) => <MessageBubble item={item} onOpenPdf={openPdf} />}
+        contentContainerStyle={chat.list}
+        onContentSizeChange={scrollToBottom}
+        ListHeaderComponent={empty ? (
+          <GreetingCard name={first}>
+            I can fetch your live attendance, assignments, timetable, and even generate a PDF report.
+            Say “remember …” and I’ll keep it in mind next time.
+          </GreetingCard>
+        ) : null}
+        ListFooterComponent={sending ? <TypingBubble /> : null}
+      />
+    );
+  }
+
+  return (
+    <ChatLayout input={input} setInput={setInput} onSend={() => send()} sending={sending}>
+      {content}
+      {empty && <Suggestions items={STUDENT_SUGGESTIONS} onPick={send} />}
+    </ChatLayout>
   );
+}
+
+export default function ChatScreen({ navigation }) {
+  const { user } = useAuth();
+  const isAdmin = ['super_admin', 'admin'].includes(user?.role);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerTitle: () => <ChatTitle /> });
+  }, [navigation]);
+
+  return isAdmin ? <AdminChat /> : <AssistantChat navigation={navigation} />;
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  list: { paddingTop: space.lg, paddingBottom: space.sm },
-  message: { maxWidth: '82%', marginBottom: space.md, marginHorizontal: space.lg },
-  mine: { alignSelf: 'flex-end' },
-  theirs: { alignSelf: 'flex-start' },
-  bubble: { borderRadius: radius.xl, padding: space.md },
-  bubbleMine: { borderBottomRightRadius: radius.sm - 2 },
-  bubbleTheirs: { borderBottomLeftRadius: radius.sm - 2, borderWidth: StyleSheet.hairlineWidth },
-  pdf: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    marginTop: space.md,
-    borderRadius: radius.md,
-    padding: space.md - 2,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  pdfIcon: { width: 32, height: 32, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  pdfName: { fontWeight: '600' },
-  suggestions: { paddingHorizontal: space.lg, paddingBottom: space.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: { borderRadius: radius.full, paddingHorizontal: space.md + 2, paddingVertical: space.sm, borderWidth: StyleSheet.hairlineWidth },
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: space.md - 2,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  input: {
-    flex: 1,
-    borderRadius: 22,
-    paddingHorizontal: space.lg,
-    paddingTop: space.md - 2,
-    paddingBottom: space.md - 2,
-    maxHeight: 100,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: space.xs + 2, marginBottom: space.xs },
-  tagLogo: { width: 20, height: 20, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  tagLetters: { fontSize: 10, lineHeight: 12, fontWeight: '700' },
+  headerActions: { flexDirection: 'row', gap: space.lg, paddingHorizontal: space.lg },
+  skeleton: { flex: 1, padding: space.lg, gap: space.md },
+  skeletonMine: { alignSelf: 'flex-end' },
 });
