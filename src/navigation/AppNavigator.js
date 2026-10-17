@@ -31,6 +31,7 @@ import FestScreen from '../screens/Events/FestScreen';
 import TimetableScreen from '../screens/Timetable/TimetableScreen';
 import FacultyScreen from '../screens/Faculty/FacultyScreen';
 import ChatScreen from '../screens/Chat/ChatScreen';
+import MemoriesScreen from '../screens/Chat/MemoriesScreen';
 import ConversationsScreen from '../screens/Messages/ConversationsScreen';
 import NewMessageScreen from '../screens/Messages/NewMessageScreen';
 import ConversationScreen from '../screens/Messages/ConversationScreen';
@@ -147,6 +148,7 @@ function MainStack() {
       <Stack.Screen name="Compufest" component={CompufestScreen} options={{ title: 'Compufest' }} />
       <Stack.Screen name="Fest" component={FestScreen} options={{ title: 'Yash Fest' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'CT Assistant' }} />
+      <Stack.Screen name="Memories" component={MemoriesScreen} options={{ title: 'Memories' }} />
       <Stack.Screen name="PendingApprovals" component={PendingApprovalsScreen} options={{ title: 'Pending approvals' }} />
       <Stack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ title: 'Attendance detail' }} />
       <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Results' }} />
