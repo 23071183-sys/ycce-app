@@ -5,6 +5,10 @@ import { space } from '../../theme';
 import { Avatar, Badge, Card, EmptyState, ErrorState, ListItem, Screen, SegmentedControl } from '../../components/ui';
 import { EventCard, EventListSkeleton, styles as eventStyles } from './EventParts';
 import useEventRegistration from './useEventRegistration';
+import GradientHeader from '../../components/GradientHeader';
+import { CompufestLogo } from '../../components/brand';
+import { useThemeControls } from '../../context/ThemeContext';
+import { brandFg } from '../../theme';
 
 const TABS = [{ value: 'committee', label: 'Committee' }, { value: 'events', label: 'Events' }];
 
@@ -13,6 +17,7 @@ export default function CompufestScreen({ navigation }) {
   const events = useApi('/compufest/events', { initialData: [] });
   const committee = useApi('/compufest/committee', { initialData: [] });
   const reg = useEventRegistration('compufest', navigation);
+  const { scheme } = useThemeControls();
 
   const loading = events.loading || committee.loading;
   const error = events.error || committee.error;
@@ -29,6 +34,7 @@ export default function CompufestScreen({ navigation }) {
         <EventCard
           key={String(item.id)}
           item={item}
+          brandKey="compufest"
           counts={reg.countsFor(item.id)}
           busy={reg.busyId === item.id}
           onRegister={() => reg.register(item.id)}
@@ -59,7 +65,24 @@ export default function CompufestScreen({ navigation }) {
 
   return (
     <Screen onRefresh={refresh} refreshing={refreshing}>
-      <SegmentedControl options={TABS} value={tab} onChange={setTab} style={eventStyles.tabs} />
+      <GradientHeader
+        brandKey="compufest"
+        logo={<CompufestLogo size={56} />}
+        title="Compufest"
+        tagline="Computer Technology’s tech fest"
+        stats={loading ? null : [
+          { value: events.data?.length || 0, label: 'Events' },
+          { value: (committee.data || []).length, label: 'Committee' },
+          { value: reg.totals.mine, label: 'Tickets' },
+        ]}
+      />
+      <SegmentedControl
+        options={TABS}
+        value={tab}
+        onChange={setTab}
+        activeColor={brandFg('compufest', scheme)}
+        style={eventStyles.tabs}
+      />
       {body}
     </Screen>
   );
