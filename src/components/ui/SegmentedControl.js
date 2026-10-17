@@ -5,8 +5,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { radius, space } from '../../theme';
 
 // A row of mutually exclusive options. options is a list of strings or
-// { value, label } objects; value is the selected one.
-export default function SegmentedControl({ options, value, onChange, style }) {
+// { value, label } objects; value is the selected one. activeColor tints the
+// selected segment, for screens with their own colour (a fest, a subject).
+export default function SegmentedControl({ options, value, onChange, style, activeColor }) {
   const c = useTheme();
   const items = options.map(o => (typeof o === 'string' ? { value: o, label: o } : o));
   return (
@@ -21,10 +22,19 @@ export default function SegmentedControl({ options, value, onChange, style }) {
             accessibilityState={{ selected }}
             style={[
               styles.segment,
-              selected && { backgroundColor: c.surface, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth },
+              selected && {
+                backgroundColor: c.surface,
+                borderColor: activeColor || c.border,
+                borderWidth: activeColor ? 1 : StyleSheet.hairlineWidth,
+              },
             ]}
           >
-            <Text variant="callout" tone={selected ? 'default' : 'muted'} style={selected && styles.selectedText} numberOfLines={1}>
+            <Text
+              variant="callout"
+              tone={selected ? 'default' : 'muted'}
+              style={[selected && styles.selectedText, selected && activeColor && { color: activeColor }]}
+              numberOfLines={1}
+            >
               {item.label}
             </Text>
           </Pressable>

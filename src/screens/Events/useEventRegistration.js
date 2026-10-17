@@ -71,7 +71,13 @@ export default function useEventRegistration(type, navigation) {
     ]);
   };
 
-  return { countsFor: (id) => byEvent.get(id), busyId, register, cancel, refreshCounts: counts.refresh };
+  const rows = counts.data || [];
+  const totals = {
+    registered: rows.reduce((n, r) => n + (r.registered || 0), 0),
+    mine: rows.filter(r => r.mine).length,
+  };
+
+  return { countsFor: (id) => byEvent.get(id), totals, busyId, register, cancel, refreshCounts: counts.refresh };
 }
 
 const styles = StyleSheet.create({

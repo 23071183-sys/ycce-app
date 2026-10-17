@@ -3,6 +3,10 @@ import useApi from '../../hooks/useApi';
 import { Card, EmptyState, ErrorState, Screen, SegmentedControl, Text } from '../../components/ui';
 import { EventCard, EventListSkeleton, fmtEventDate, styles } from './EventParts';
 import useEventRegistration from './useEventRegistration';
+import GradientHeader from '../../components/GradientHeader';
+import { YashLogo } from '../../components/brand';
+import { useThemeControls } from '../../context/ThemeContext';
+import { brandFg } from '../../theme';
 
 const TABS = [{ value: 'events', label: 'Events' }, { value: 'announcements', label: 'Updates' }];
 
@@ -11,6 +15,7 @@ export default function FestScreen({ navigation }) {
   const events = useApi('/fest/events', { initialData: [] });
   const updates = useApi('/fest/announcements', { initialData: [] });
   const reg = useEventRegistration('fest', navigation);
+  const { scheme } = useThemeControls();
 
   const loading = events.loading || updates.loading;
   const error = events.error || updates.error;
@@ -27,6 +32,7 @@ export default function FestScreen({ navigation }) {
         <EventCard
           key={String(item.id)}
           item={item}
+          brandKey="yash"
           counts={reg.countsFor(item.id)}
           busy={reg.busyId === item.id}
           onRegister={() => reg.register(item.id)}
@@ -48,7 +54,24 @@ export default function FestScreen({ navigation }) {
 
   return (
     <Screen onRefresh={refresh} refreshing={refreshing}>
-      <SegmentedControl options={TABS} value={tab} onChange={setTab} style={styles.tabs} />
+      <GradientHeader
+        brandKey="yash"
+        logo={<YashLogo size={56} />}
+        title="Yash Fest"
+        tagline="The cultural fest of YCCE"
+        stats={loading ? null : [
+          { value: events.data?.length || 0, label: 'Events' },
+          { value: reg.totals.registered, label: 'Registered' },
+          { value: reg.totals.mine, label: 'Tickets' },
+        ]}
+      />
+      <SegmentedControl
+        options={TABS}
+        value={tab}
+        onChange={setTab}
+        activeColor={brandFg('yash', scheme)}
+        style={styles.tabs}
+      />
       {body}
     </Screen>
   );
