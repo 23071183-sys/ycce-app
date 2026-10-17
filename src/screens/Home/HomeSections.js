@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { attendanceTone, space } from '../../theme';
+import { attendanceTone, brand, brandFg, hueColors, radius, space } from '../../theme';
+import { useTheme, useThemeControls } from '../../context/ThemeContext';
 import { fmtDate, fmtTime, relativeTime } from '../../utils/format';
 import {
   Badge, Card, EmptyState, Icon, ListItem, ProgressRing, SectionLabel, Skeleton, StatNumber, Text,
@@ -184,14 +185,25 @@ export function StatTiles({ tiles, loading }) {
   );
 }
 
+// The icon's colour: the brand's for Compufest, Fest, the assistant and
+// Results, otherwise the link's hue.
+function linkColors(link, c, scheme) {
+  if (link.brand) return { fg: brandFg(link.brand, scheme), soft: brand[link.brand].soft };
+  return hueColors(c, link.tint);
+}
+
 export function QuickLinks({ links, onOpen }) {
+  const c = useTheme();
+  const { scheme } = useThemeControls();
   return (
     <View style={styles.section}>
       <SectionLabel>Quick access</SectionLabel>
       <View style={styles.grid}>
         {links.map(link => (
           <Card key={link.label} onPress={() => onOpen(link.screen)} style={styles.gridTile}>
-            <Icon name={link.icon} size={22} tone="default" />
+            <View style={[styles.linkIcon, { backgroundColor: linkColors(link, c, scheme).soft }]}>
+              <Icon name={link.icon} size={20} color={linkColors(link, c, scheme).fg} />
+            </View>
             <Text variant="body" style={styles.gridLabel}>{link.label}</Text>
           </Card>
         ))}
@@ -220,4 +232,5 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md },
   gridTile: { width: '48.5%', minHeight: 96, justifyContent: 'space-between' },
   gridLabel: { marginTop: space.md },
+  linkIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
 });
