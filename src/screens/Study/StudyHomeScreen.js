@@ -130,7 +130,7 @@ export default function StudyHomeScreen({ navigation }) {
         (subjects.data || []).map(s => (
           <Card key={s.id} style={styles.subject}>
             <View style={styles.subjectHead}>
-              <Monogram name={s.name} />
+              <Monogram name={s.name} colorKey={s.id} />
               <View style={styles.flex}>
                 <Text variant="body">{s.name}</Text>
                 <Text variant="caption" tone="muted">{s.code}</Text>
