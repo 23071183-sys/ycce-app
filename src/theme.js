@@ -1,8 +1,12 @@
-// Design tokens for the "monochrome refined" look. The admin site uses the same
-// palette (app/globals.css in ycce-app-web), so the two stay consistent.
+// Design tokens. The admin site uses the same palette (app/globals.css in
+// ycce-app-web), so the two stay consistent.
 //
-// One accent colour only. Status colours (success / warning / danger) are for
-// meaning — attendance thresholds, fee status — never for decoration.
+// The base is a clean neutral layout with one accent (blue) for selection and
+// primary actions. On top of that, colour marks areas and identity: each
+// brand (Compufest, Yash Fest, the assistant, Results) has a fixed gradient,
+// and each subject keeps one of eight hues everywhere it appears. Status
+// colours (success / warning / danger) still only carry meaning: attendance
+// thresholds, fee status, pass and fail.
 
 const lightRoles = {
   bg: '#F5F5F7',
@@ -44,9 +48,75 @@ const darkRoles = {
   dangerSoft: 'rgba(255,69,58,0.16)',
 };
 
+// Subject hues, in hueFor order. fg is for letters and strips, soft for tiles.
+export const HUE_KEYS = ['teal', 'indigo', 'amber', 'rose', 'emerald', 'sky', 'violet', 'orange'];
+
+const lightHues = {
+  teal: { fg: '#0D9488', soft: 'rgba(13,148,136,0.12)' },
+  indigo: { fg: '#4F46E5', soft: 'rgba(79,70,229,0.12)' },
+  amber: { fg: '#B45309', soft: 'rgba(180,83,9,0.12)' },
+  rose: { fg: '#E11D48', soft: 'rgba(225,29,72,0.12)' },
+  emerald: { fg: '#059669', soft: 'rgba(5,150,105,0.12)' },
+  sky: { fg: '#0284C7', soft: 'rgba(2,132,199,0.12)' },
+  violet: { fg: '#7C3AED', soft: 'rgba(124,58,237,0.12)' },
+  orange: { fg: '#EA580C', soft: 'rgba(234,88,12,0.12)' },
+};
+
+const darkHues = {
+  teal: { fg: '#2DD4BF', soft: 'rgba(45,212,191,0.16)' },
+  indigo: { fg: '#818CF8', soft: 'rgba(129,140,248,0.16)' },
+  amber: { fg: '#FBBF24', soft: 'rgba(251,191,36,0.16)' },
+  rose: { fg: '#FB7185', soft: 'rgba(251,113,133,0.16)' },
+  emerald: { fg: '#34D399', soft: 'rgba(52,211,153,0.16)' },
+  sky: { fg: '#38BDF8', soft: 'rgba(56,189,248,0.16)' },
+  violet: { fg: '#A78BFA', soft: 'rgba(167,139,250,0.16)' },
+  orange: { fg: '#FB923C', soft: 'rgba(251,146,60,0.16)' },
+};
+
 export const palette = {
-  light: lightRoles,
-  dark: darkRoles,
+  light: { ...lightRoles, hues: lightHues },
+  dark: { ...darkRoles, hues: darkHues },
+};
+
+// Brand gradients. Fixed, so they look the same in light and dark mode; text
+// on them is always white. soft is a translucent tint for chips and fills.
+export const brand = {
+  compufest: { from: '#0EA5E9', to: '#6366F1', soft: 'rgba(14,165,233,0.14)', fg: '#0284C7', fgDark: '#38BDF8' },
+  yash: { from: '#F97316', to: '#EC4899', soft: 'rgba(249,115,22,0.14)', fg: '#EA580C', fgDark: '#FB923C' },
+  assistant: { from: '#8B5CF6', to: '#EC4899', soft: 'rgba(139,92,246,0.14)', fg: '#7C3AED', fgDark: '#A78BFA' },
+  results: { from: '#10B981', to: '#0EA5E9', soft: 'rgba(16,185,129,0.14)', fg: '#059669', fgDark: '#34D399' },
+  onBrand: '#FFFFFF',
+  onBrandMuted: 'rgba(255,255,255,0.78)',
+  onBrandFaint: 'rgba(255,255,255,0.22)',
+};
+
+// The readable solid colour of a brand for the current scheme (for text, icons
+// and buttons on ordinary surfaces).
+export const brandFg = (key, scheme) => (scheme === 'dark' ? brand[key].fgDark : brand[key].fg);
+
+// A subject's hue name from its id or code. The same key always gives the same
+// hue, here and on the website. No key means neutral (null).
+export const hueFor = (key) => {
+  if (key === null || key === undefined || key === '') return null;
+  const s = String(key);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return HUE_KEYS[h % HUE_KEYS.length];
+};
+
+// { fg, soft } for a hue name in a colour set, or neutral colours for null.
+export const hueColors = (colors, hue) =>
+  (hue && colors.hues?.[hue]) || { fg: colors.textSecondary, soft: colors.surfaceAlt };
+
+// Which hue a grade is shown in. null for blank or unknown grades.
+export const gradeTone = (grade) => {
+  const g = String(grade ?? '').trim().toUpperCase();
+  if (!g || g === '—') return null;
+  if (['O', 'A+'].includes(g)) return 'emerald';
+  if (['A', 'B+'].includes(g)) return 'sky';
+  if (['B', 'C', 'C+'].includes(g)) return 'amber';
+  if (['D', 'E', 'F', 'FF', 'FAIL'].includes(g)) return 'rose';
+  return null;
 };
 
 // Kept for anything that still imports them directly.
