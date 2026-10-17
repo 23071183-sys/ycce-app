@@ -4,8 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api, { reportError } from '../../services/api';
 import { radius, space } from '../../theme';
+import { CgpaHero, ResultRow, SgpaBars } from './ResultsParts';
 import {
-  Badge, Card, EmptyState, ErrorState, Icon, InfoRow, Screen, SectionLabel, Skeleton, StatNumber, Text,
+  Badge, Card, EmptyState, ErrorState, Icon, InfoRow, Screen, SectionLabel, Skeleton, Text,
 } from '../../components/ui';
 
 // The component marks behind a subject's total. When the student sat RE-MSE
@@ -38,11 +39,6 @@ const getSession = (semester, studentYear) => {
   const sessionStart = joiningYear + semYearOffset;
   return `${sessionStart}-${String(sessionStart + 1).slice(-2)}`;
 };
-
-// Below 5.5 is a failing GPA; that is the only case worth colouring.
-const gpaTone = (val) => (val && Number(val) < 5.5 ? 'danger' : undefined);
-
-const COLUMNS = [['Code', 1.5], ['Subject', 3], ['Int', 1], ['Ext', 1], ['Grade', 1]];
 
 export default function ResultsScreen() {
   const { user } = useAuth();
@@ -80,10 +76,7 @@ export default function ResultsScreen() {
   if (loading) {
     body = (
       <>
-        <View style={styles.tiles}>
-          <Card style={styles.flex}><Skeleton width={60} height={28} /></Card>
-          <Card style={styles.flex}><Skeleton width={60} height={28} /></Card>
-        </View>
+        <Skeleton height={144} rounded={radius.lg} style={styles.block} />
         <Card style={styles.skeleton}>{[1, 2, 3, 4].map(i => <Skeleton key={i} height={14} />)}</Card>
       </>
     );
@@ -92,18 +85,12 @@ export default function ResultsScreen() {
   } else {
     body = (
       <>
-        {(currentSGPA !== null || cgpaData.cgpa !== null) && (
-          <View style={styles.tiles}>
-            <Card style={styles.flex}>
-              <StatNumber value={currentSGPA ?? '—'} label="SGPA" tone={gpaTone(currentSGPA)} />
-              <Text variant="caption" tone="muted" style={styles.tileSub}>Semester {semester}</Text>
-            </Card>
-            <Card style={styles.flex}>
-              <StatNumber value={cgpaData.cgpa ?? '—'} label="CGPA" tone={gpaTone(cgpaData.cgpa)} />
-              <Text variant="caption" tone="muted" style={styles.tileSub}>Avg of {cgpaData.sgpaList?.length || 0} sem(s)</Text>
-            </Card>
-          </View>
-        )}
+        <CgpaHero
+          sgpa={currentSGPA}
+          cgpa={cgpaData.cgpa}
+          semester={semester}
+          semesters={cgpaData.sgpaList?.length || 0}
+        />
 
         <SectionLabel>Student</SectionLabel>
         <Card padded={false} style={[styles.inset, styles.block]}>
@@ -119,28 +106,11 @@ export default function ResultsScreen() {
           </Card>
         ) : (
           <Card padded={false} style={styles.block}>
-            <View style={[styles.tableRow, { backgroundColor: c.surfaceAlt }]}>
-              {COLUMNS.map(([label, flex]) => (
-                <Text key={label} variant="label" style={{ flex, textAlign: flex === 1 ? 'center' : 'left' }}>{label}</Text>
+            <View style={styles.inset}>
+              {results.map((r, i) => (
+                <ResultRow key={r.id} r={r} breakdown={markBreakdown(r)} last={i === results.length - 1} />
               ))}
             </View>
-            {results.map((r, i) => {
-              const breakdown = markBreakdown(r);
-              return (
-                <View key={r.id} style={[styles.tableRow, i < results.length - 1 && divider]}>
-                  <Text variant="caption" tone="muted" style={styles.code}>{r.subject_code}</Text>
-                  <View style={styles.subject}>
-                    <Text variant="callout">{r.subject_name}</Text>
-                    {breakdown ? <Text variant="caption" tone="muted" style={styles.breakdown}>{breakdown}</Text> : null}
-                  </View>
-                  <Text variant="callout" tone="secondary" style={styles.num}>{r.internal_marks ?? '—'}</Text>
-                  <Text variant="callout" tone="secondary" style={styles.num}>{r.external_marks ?? '—'}</Text>
-                  <Text variant="callout" tone={r.result === 'Fail' ? 'danger' : 'default'} style={[styles.num, styles.grade]}>
-                    {r.grade || '—'}
-                  </Text>
-                </View>
-              );
-            })}
             <View style={[styles.result, { borderTopColor: c.border }]}>
               <Badge tone={hasFail ? 'danger' : allPassed ? 'success' : 'warning'}>
                 {hasFail ? 'Fail' : allPassed ? 'All clear' : 'Result pending'}
@@ -149,24 +119,12 @@ export default function ResultsScreen() {
           </Card>
         )}
 
-        {cgpaData.sgpaList?.length > 1 && (
+        {cgpaData.sgpaList?.length ? (
           <>
-            <SectionLabel>SGPA history</SectionLabel>
-            <Card padded={false} style={styles.inset}>
-              {cgpaData.sgpaList.map(s => (
-                <View key={s.semester} style={[styles.historyRow, divider]}>
-                  <Text variant="callout" style={styles.flex}>Semester {s.semester}</Text>
-                  <Text variant="caption" tone="muted" style={styles.flex}>{getSession(s.semester, user?.year)}</Text>
-                  <Text variant="heading" tone={gpaTone(s.sgpa)} style={styles.tabular}>{s.sgpa}</Text>
-                </View>
-              ))}
-              <View style={styles.historyRow}>
-                <Text variant="label" style={styles.flex}>Cumulative CGPA</Text>
-                <Text variant="numeric" tone={gpaTone(cgpaData.cgpa)}>{cgpaData.cgpa}</Text>
-              </View>
-            </Card>
+            <SectionLabel>SGPA by semester</SectionLabel>
+            <SgpaBars list={cgpaData.sgpaList} selected={semester} />
           </>
-        )}
+        ) : null}
       </>
     );
   }
@@ -219,18 +177,9 @@ const styles = StyleSheet.create({
   block: { marginBottom: space.xxl },
   inset: { paddingHorizontal: space.lg },
   picker: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  tiles: { flexDirection: 'row', gap: space.md, marginBottom: space.xxl },
   tileSub: { marginTop: 2 },
   skeleton: { gap: space.md, marginBottom: space.xxl },
-  tableRow: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: space.md, paddingVertical: space.md },
-  code: { flex: 1.5 },
-  subject: { flex: 3, paddingRight: space.xs },
-  breakdown: { marginTop: 2 },
-  num: { flex: 1, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  grade: { fontWeight: '700' },
   result: { alignItems: 'center', padding: space.md, borderTopWidth: StyleSheet.hairlineWidth },
-  historyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md },
-  tabular: { fontVariant: ['tabular-nums'] },
   // A scrim over either theme; black at partial opacity reads in light and dark.
   backdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: { width: '80%', maxHeight: '70%', borderRadius: radius.xl, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
