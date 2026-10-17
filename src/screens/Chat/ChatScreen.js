@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import api, { AI_TIMEOUT_MS } from '../../services/api';
+import RichText from '../../components/RichText';
 import { Icon, SectionLabel, Text } from '../../components/ui';
 import { radius, space, type } from '../../theme';
 
@@ -72,7 +73,7 @@ export default function ChatScreen() {
         .map(m => ({ role: m.role, content: m.content }));
 
       const endpoint = isAdmin ? '/chat/admin' : '/chat';
-      const { data } = await api.post(endpoint, { messages: apiMessages });
+      const { data } = await api.post(endpoint, { messages: apiMessages }, { timeout: AI_TIMEOUT_MS });
 
       setMessages(prev => [
         ...prev,
@@ -109,7 +110,9 @@ export default function ChatScreen() {
               : [styles.bubbleTheirs, { backgroundColor: c.surface, borderColor: c.border }],
           ]}
         >
-          <Text variant="body" style={isUser && { color: c.bg }}>{item.content}</Text>
+          {isUser
+            ? <Text variant="body" style={{ color: c.bg }}>{item.content}</Text>
+            : <RichText>{item.content}</RichText>}
 
           {item.pdf_url && (
             <Pressable
