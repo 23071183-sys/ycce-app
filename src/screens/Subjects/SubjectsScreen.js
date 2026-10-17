@@ -4,10 +4,44 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import api, { reportError } from '../../services/api';
 import Monogram from '../../components/Monogram';
-import { space } from '../../theme';
+import { hueColors, hueFor, radius, space } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 import {
-  Card, EmptyState, ErrorState, Icon, ListItem, Screen, SectionLabel, Skeleton, Text,
+  Card, EmptyState, ErrorState, Icon, Screen, SectionLabel, Skeleton, Text,
 } from '../../components/ui';
+
+function Chip({ icon, children }) {
+  const c = useTheme();
+  return (
+    <View style={[styles.chip, { backgroundColor: c.surfaceAlt }]}>
+      {icon ? <Icon name={icon} size={11} tone="muted" /> : null}
+      <Text variant="caption" tone="secondary" numberOfLines={1}>{children}</Text>
+    </View>
+  );
+}
+
+export function SubjectCard({ subject, onPress }) {
+  const c = useTheme();
+  const { fg } = hueColors(c, hueFor(subject.id));
+  return (
+    <Card onPress={onPress} padded={false} style={styles.card}>
+      <View style={[styles.strip, { backgroundColor: fg }]} />
+      <View style={styles.cardBody}>
+        <Monogram name={subject.name} colorKey={subject.id} size={44} />
+        <View style={styles.flex}>
+          <Text variant="heading" numberOfLines={2}>{subject.name}</Text>
+          {subject.code ? <Text variant="caption" style={[styles.code, { color: fg }]}>{subject.code}</Text> : null}
+          <View style={styles.chips}>
+            <Chip icon="person-outline">{subject.professor_name || 'TBA'}</Chip>
+            {subject.year ? <Chip>Year {subject.year}</Chip> : null}
+            {subject.semester ? <Chip>Sem {subject.semester}</Chip> : null}
+          </View>
+        </View>
+        <Icon name="chevron-forward" size={16} tone="muted" />
+      </View>
+    </Card>
+  );
+}
 
 export default function SubjectsScreen({ navigation }) {
   const { user } = useAuth();
@@ -54,20 +88,9 @@ export default function SubjectsScreen({ navigation }) {
   } else if (!subjects.length) {
     body = <EmptyState icon="book-outline" title="No subjects yet" message="Subjects assigned to you will show here." />;
   } else {
-    body = (
-      <Card padded={false} style={styles.inset}>
-        {subjects.map((item, i) => (
-          <ListItem
-            key={String(item.id)}
-            leading={<Monogram name={item.name} />}
-            title={item.name}
-            subtitle={`${item.code} · ${item.professor_name || 'TBA'} · Year ${item.year} · Sem ${item.semester}`}
-            onPress={() => navigation.navigate('SubjectDetail', { subject: item })}
-            last={i === subjects.length - 1}
-          />
-        ))}
-      </Card>
-    );
+    body = subjects.map(item => (
+      <SubjectCard key={String(item.id)} subject={item} onPress={() => navigation.navigate('SubjectDetail', { subject: item })} />
+    ));
   }
 
   return (
@@ -85,5 +108,19 @@ const styles = StyleSheet.create({
   header: { marginBottom: space.sm },
   headerButton: { paddingHorizontal: space.lg },
   skeleton: { gap: space.md },
-  inset: { paddingHorizontal: space.lg },
+  card: { marginBottom: space.md },
+  strip: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
+  cardBody: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, paddingLeft: space.lg + 4 },
+  flex: { flex: 1 },
+  code: { fontWeight: '600', letterSpacing: 0.5, marginTop: 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs + 2, marginTop: space.sm },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    maxWidth: '100%',
+  },
 });

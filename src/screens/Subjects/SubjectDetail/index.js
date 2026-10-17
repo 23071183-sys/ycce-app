@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../context/AuthContext';
 import api, { reportError } from '../../../services/api';
-import { space } from '../../../theme';
+import { hueColors, hueFor, radius, space } from '../../../theme';
+import { useTheme } from '../../../context/ThemeContext';
+import Monogram from '../../../components/Monogram';
 import { Card, ErrorState, Screen, SegmentedControl, Skeleton, Text } from '../../../components/ui';
 import NotesTab from './NotesTab';
 import AnnouncementsTab from './AnnouncementsTab';
@@ -19,6 +21,8 @@ const TABS = [
 export default function SubjectDetailScreen({ route }) {
   const { subject } = route.params;
   const { user } = useAuth();
+  const c = useTheme();
+  const hue = hueColors(c, hueFor(subject.id));
   const isProfessor = user?.role === 'professor';
   const [tab, setTab] = useState('Announcements');
   const [notes, setNotes] = useState([]);
@@ -81,20 +85,31 @@ export default function SubjectDetailScreen({ route }) {
 
   return (
     <Screen onRefresh={() => fetchTab(true)} refreshing={refreshing}>
-      <View style={styles.header}>
-        <Text variant="title">{subject.name}</Text>
-        <Text variant="callout" tone="muted" style={styles.sub}>
-          {[subject.code, subject.professor_name].filter(Boolean).join(' · ')}
-        </Text>
+      <View style={[styles.header, { backgroundColor: hue.soft }]}>
+        <Monogram name={subject.name} colorKey={subject.id} size={52} />
+        <View style={styles.flex}>
+          <Text variant="title">{subject.name}</Text>
+          <Text variant="callout" tone="secondary" style={styles.sub}>
+            {[subject.code, subject.professor_name].filter(Boolean).join(' · ')}
+          </Text>
+        </View>
       </View>
-      <SegmentedControl options={TABS} value={tab} onChange={setTab} style={styles.tabs} />
+      <SegmentedControl options={TABS} value={tab} onChange={setTab} activeColor={hue.fg} style={styles.tabs} />
       {body}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: space.lg },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    marginBottom: space.lg,
+  },
+  flex: { flex: 1 },
   sub: { marginTop: space.xs },
   tabs: { marginBottom: space.lg },
   skeleton: { gap: space.sm, marginBottom: space.md },

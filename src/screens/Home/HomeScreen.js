@@ -111,7 +111,7 @@ function ProfessorHome({ data, loading, navigation }) {
           {subjects.map((s, i) => (
             <ListItem
               key={s.id}
-              leading={<Monogram name={s.name} />}
+              leading={<Monogram name={s.name} colorKey={s.id} />}
               title={s.name}
               subtitle={`${s.code} · Year ${s.year}`}
               onPress={() => navigation.navigate('SubjectDetail', { subject: s })}
